@@ -1,0 +1,172 @@
+---
+title: "Project Part 2"
+author: "Brendan Callender"
+format: html
+editor: visual
+---
+
+## Load libraries
+
+```{r}
+#| label: load-packages
+
+library(tidyverse)
+library(rvest)
+```
+
+## Fbref data
+
+```{r}
+#| label: get-fbref-data
+#| eval: false
+
+years <- 2017:2023 # grab data between 2017-2018 season up to 2023-2024 season
+res_df1 <- data.frame() # initialize dataframe for results
+
+for(year in years) {
+  
+  # Create url for current year
+  url <- glue::glue("https://fbref.com/en/comps/9/{year}-{year+1}/{year}-{year+1}-Premier-League-Stats")
+  webpage <- read_html(url) # pull html for current year
+  tables <- webpage %>%
+  html_elements(".stats_table") %>% # pull all .stats_table elements from webpage
+  html_table() 
+
+  # Extract variables from different tables on the webpage
+  
+  table1 <- tables %>% .[[1]] %>% select(Squad, GF, GA, Pts, xG, xGA)
+  
+  table2 <- tables %>% .[[3]] %>% .[,1:4]
+  names(table2) <- table2[1,] # fix column names
+  table2 <- table2[-1,] %>% select(-`# Pl`)
+  
+  table3 <- tables %>% .[[9]]
+  names(table3) <- table3[1,] # fix column names
+  table3 <- table3[-1,]
+  table3 <- table3 %>% select(Squad, Sh, SoT, Dist)
+  
+  table4 <- tables %>% .[[5]] %>% .[,1:17]
+  names(table4) <- table4[1,] # fix names
+  table4 <- table4[-1,] 
+  table4 <- table4 %>% select(Squad, SoTA, CS)
+  
+  # join to combine all data for the current year
+  final_table <- table1 %>%
+    left_join(table2, by = "Squad") %>%
+    left_join(table3, by = "Squad") %>%
+    left_join(table4, by = "Squad") %>%
+    mutate(Season = glue::glue("{year}-{year+1}"), .before = 2)
+  
+  # add current year table to results
+  res_df1 <- rbind(
+    res_df1,
+    final_table
+  )
+  
+  Sys.sleep(2)  # delay call to webpage
+  
+}
+
+rm(tables, table1, table2, table3, table4) # clear temporary variables
+```
+
+## Transfermarkt data
+
+```{r}
+#| label: get-transfermarkt-data
+#| eval: false
+
+years <- 2017:2023 # grab data between 2017-2018 season up to 2023-2024 season
+res_df2 <- data.frame() # initialize dataframe for results
+
+for(year in years) {
+  
+  # Create url for current year
+  url <- glue::glue("https://www.transfermarkt.us/premier-league/einnahmenausgaben/wettbewerb/GB1/plus/0?ids=a&sa=&saison_id={year}&saison_id_bis={year}&nat=&pos=&altersklasse=&w_s=&leihe=&intern=0")
+  
+  webpage <- read_html(url) # load html for current year
+  
+  table <- webpage %>%
+    html_elements("table.items") %>% # grab all "table.items" elements from html
+    html_table() %>%
+    .[[1]] %>%
+    .[,3:8]
+
+  # fix column names in table
+  names(table) <- c("Squad", "Expenditure", "Arrivals", "Income", "Depatures", "Balance")
+  
+  # create season variable
+  table <- table %>% mutate(Season = glue::glue("{year}-{year+1}"), .before = 2)
+  
+  # add current year table to results
+  res_df2 <- rbind(
+    res_df2,
+    table
+  )
+  
+  Sys.sleep(2) # delay vall to webpage
+  
+}
+
+rm(table) # clear temporaty variable(s)
+```
+
+## Data Cleaning + Output
+
+```{r}
+#| label: fix-squad-names-and-combine
+
+prem_points <- res_df1
+
+team_expenditures <- res_df2 %>%
+  mutate(Squad = str_replace(Squad, " FC", ""),
+         Squad = str_replace(Squad, "AFC ", ""),
+         Squad = str_replace(Squad, " Town", ""),
+         Squad = str_replace(Squad, "United", "Utd"),
+         Squad = case_when(
+           Squad == "Brighton & Hove Albion" ~ "Brighton",
+           Squad == "Wolverhampton Wanderers" ~ "Wolves",
+           Squad == "Tottenham Hotspur" ~ "Tottenham",
+           Squad == "West Ham Utd" ~ "West Ham",
+           Squad == "West Bromwich Albion" ~ "West Brom",
+           Squad == "Leeds Utd" ~ "Leeds United",
+           Squad == "Nottingham Forest" ~ "Nott'ham Forest",
+           Squad == "Luton" ~ "Luton Town",
+           TRUE ~ Squad
+         ))
+
+
+prem_data <- prem_points %>%
+  left_join(team_expenditures, by = c("Squad", "Season"), keep = FALSE)
+
+```
+
+```{r}
+#| label: clean-data
+#| warning: false
+
+make_per_90 <- function(stat) {stat / 38}
+
+prem_data_out <- prem_data %>%
+   # convert string transfer varoables to numeric
+  mutate(Expenditure = as.numeric(str_replace(str_replace(Expenditure, "€", ""), "m", "")),
+         Income = as.numeric(str_replace(str_replace(Income, "€", ""), "m", "")),
+         Balance = as.numeric(str_replace(str_replace(Balance, "€", ""), "m", ""))) %>%
+  mutate(across(.cols = c(Age, Poss, Sh, SoT, Dist, SoTA, CS), .fns = as.numeric)) %>%
+  # convert team variables to per/90 values
+  mutate(across(.cols = c(GF, GA, xG, xGA, Sh, SoT, SoTA), .fns = make_per_90)) %>%
+    mutate_all(~replace(., is.na(.), 0)) # replace NA values with 0
+```
+
+```{r}
+#| label: output-dataset-final
+
+write_csv(prem_data_out, here::here("Project", "data", "prem_multi_level.csv"))
+```
+
+```{r}
+prem_data_out %>%
+  sapply(class)
+
+# Age, Poss, Sh, SoT, Dist, SoTA, CS
+```

@@ -1,0 +1,27 @@
+---
+title: "Project Part II"
+author: "Dylan Li, Liam Quach, Brendan Callender"
+format: docx
+editor: visual
+embed-resources: true
+---
+
+## 1. Data Cleaning Summary
+
+To create our multi-level dataset, we had to scrape data from fbref.com (Football Reference) and transfermarkt.com. We scraped data for premier league teams starting from the 2017 season up to the most recently completed 2023 season. The data from fbref included the total points for each team, goals scored, goals conceded, expected goals, expected goals conceded, average rate of possession over the season, average age of squad, total shots, total shots on target, average distance of shots from goal and more. The data scraped for each team from transfermarkt related to each teams activity in the transfer market that season. These variables included money spent on incoming players, money gained on outgoing players, net spend, number of players in, and number of players out. To combine the two datasets, we had to clean the squad names in the datasets to reconcile the different naming conventions for teams on different sites (See cases below). Once the data was combined we performed a final step of data cleaning to create our final analysis dataset. This cleaning included transforming applicable variables to per90 (per game) values instead of season total. This allows for more easily interpretable results. Additionally, transfermarkt, had "-" to represent 0 which later turned into NA values so these values were replaced with zeros.
+
+### Code to Scrape from Fbref 
+
+![](images/fbref_scrape.png)
+
+### Code to Scrape from Transfermarkt
+
+![](images/scrape_transfermarkt.png)
+
+### Combine Fbref and Transfermarkt data
+
+![](images/combine_data.png)
+
+### Clean Data
+
+![](images/data_clean_2.png)
