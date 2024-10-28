@@ -34,6 +34,7 @@ To create our multi-level dataset, we had to scrape data from fbref.com (Footbal
 #| label: load-packages
 
 library(tidyverse)
+library(labelled)
 ```
 
 ### Load Data
@@ -42,4 +43,34 @@ library(tidyverse)
 #| label: read-in-data
 
 prem <- read_csv(here::here("data", "prem_multi_level.csv"))
+```
+
+### Add Labels
+
+```{r}
+prem <- prem %>%
+  set_variable_labels(Squad = "Team Name",
+                      Season = "Premier League Season",
+                      GF = "Goals Scored per90",
+                      GA = "Goals Against per90",
+                      Pts = "Point Total",
+                      xG = "Expected Goals per90",
+                      xGA = "Expected Goals Against per90", 
+                      Age = "Average Age of Squad",
+                      Poss = "Average Posession",
+                      Sh = "Shots per90",
+                      SoT = "Shots on Target per90",
+                      Dist = "Average Dist of Shots from Goal",
+                      SoTA = "Shots on Target Against per90",
+                      CS = "Clean Sheets",
+                      Expenditure = "Money spent on incomings",
+                      Arrivals = "# Players In",
+                      Income = "Money gained on outgoings",
+                      Departures = "# Players Out",
+                      Balance = "Net Spend (Income - Expenditures)"
+                      )
+```
+
+```{r}
+prem %>% colnames()
 ```
