@@ -109,7 +109,7 @@ prem %>%
   labs(
     x = "Points",
     y = "",
-    title = "Distribution of Points by Team",
+    title = "Distribution of Points by Team (2017-2023 Seasons)",
     caption = "Data from Fbref.com"
     ) +
   theme(plot.title.position = "plot")
