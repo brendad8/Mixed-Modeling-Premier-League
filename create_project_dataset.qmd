@@ -161,12 +161,13 @@ prem_data_out <- prem_data %>%
 ```{r}
 #| label: output-dataset-final
 
-write_csv(prem_data_out, here::here("Project", "data", "prem_multi_level.csv"))
+write_csv(prem_data_out, here::here("data", "prem_multi_level.csv"))
 ```
 
 ```{r}
+#| label: check-dtypes
+
 prem_data_out %>%
   sapply(class)
 
-# Age, Poss, Sh, SoT, Dist, SoTA, CS
 ```
