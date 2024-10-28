@@ -101,14 +101,13 @@ prem %>%
   theme(legend.position = "none") +
   scale_fill_identity() +
   scale_color_identity() +
-  theme_minimal() +
+  theme_bw() +
   labs(
     x = "Points",
     y = "",
     title = "Distribution of Points by Team",
     caption = "Data from Fbref.com"
     ) +
-  theme_minimal() +
   theme(plot.title.position = "plot")
 
 ```
@@ -132,6 +131,7 @@ The correlation plot reveals some strong relationships between variables. Goals 
 
 ```{r}
 #| label: goals-vs-possession
+#| message: false
 
 # Scatter plot for goals scored per90 vs average possession
 ggplot(prem, aes(x = Poss, y = GF)) +
@@ -140,7 +140,8 @@ ggplot(prem, aes(x = Poss, y = GF)) +
   labs(title = "Goals Scored per90 vs Average Possession",
        x = "Average Possession (%)",
        y = "Goals Scored per90",
-       caption = "Data from Fbref.com")
+       caption = "Data from Fbref.com") +
+  theme_bw()
 ```
 
 The scatter plot demonstrates a positive linear trend between possession and goals scored per game. Teams with higher possession percentages tend to score more goals, which suggests that controlling the game often leads to better attacking outcomes. However, there is still variability, indicating that other factors beyond possession influence goal-scoring effectiveness.
@@ -149,6 +150,7 @@ The scatter plot demonstrates a positive linear trend between possession and goa
 
 ```{r}
 #| label: net-spend-vs-points
+#| message: false
 
 # Scatter plot for net spend vs point total
 prem %>%
@@ -170,7 +172,7 @@ prem %>%
 
 ```
 
-The scatter plot between net spend and point total shows a slightly negative relationship, which is somewhat counterintuitive. This suggests that high spending teams do not always achieve higher point totals, potentially due to inefficiencies in spending or challenges in integrating new players. Teams with a lower or negative net spend can still achieve success, likely due to better tactical planning, consistency, and effective resource utilization.
+The scatter plot between net spend and point total shows a slightly negative relationship, which is somewhat counter intuitive. This suggests that high spending teams do not always achieve higher point totals, potentially due to inefficiencies in spending or challenges in integrating new players. Teams with a lower or negative net spend can still achieve success, likely due to better tactical planning, consistency, and effective resource utilization.
 
 ### Key Findings from EDA
 
