@@ -67,7 +67,66 @@ prem <- prem %>%
     Expenditure = "Money spent on incomings",
     Arrivals    = "# Players In",
     Income      = "Money gained on outgoings",
-    Depatures   = "# Players Out",
+    Departures   = "# Players Out",
     Balance     = "Net Spend (Income - Expenditures)"
   )
 ```
+
+### Summary Statistics
+
+```{r}
+#| label: summary-stats
+
+# Summarize numeric variables in the dataset to get a sense of the data
+summary_stats <- prem %>% 
+  select(GF, GA, xG, xGA, Poss, Age, Sh, SoT, Dist, SoTA, CS, Expenditure, Arrivals, Income, Departures, Balance) %>% 
+  summary()
+summary_stats
+```
+The summary statistics show that teams have an average of around 1.42 goals scored per game (GF) and a similar average of goals conceded (GA). Expected goals (xG) are generally slightly higher than actual goals, indicating that teams may underperform compared to expected chances. The average possession (Poss) ranges from 35.4% to 71%, suggesting a diverse range of playing styles among teams. Net expenditure (Balance) also varies significantly, from highly negative values to positive, reflecting different transfer market strategies.
+
+### Correlation Analysis
+
+```{r}
+#| label: correlation-plot
+
+# Create a correlation plot to identify relationships between numeric variables
+library(corrplot)
+corr_matrix <- prem %>% 
+  select(GF, GA, xG, xGA, Poss, Age, Sh, SoT, Dist, SoTA, CS, Expenditure, Arrivals, Income, Departures, Balance) %>% 
+  cor()
+corrplot(corr_matrix, method = "color", type = "lower", tl.cex = 0.7, tl.pos = "lt", addCoef.col = "black")
+```
+The correlation plot reveals some strong relationships between variables. Goals Scored (GF) has a strong positive correlation with Expected Goals (xG) (0.93) and Shots on Target (SoT) (0.91), indicating that creating high-quality chances and converting them are key factors for success. Conversely, Goals Against (GA) is negatively correlated with metrics like Clean Sheets (CS) (-0.88), suggesting that teams that concede fewer goals also have more clean sheets. However, Net Spend (Balance) has a weak correlation with point total (Pts), implying that spending money does not necessarily guarantee better results.
+
+### Possession vs Goals Scored
+
+```{r}
+#| label: goals-vs-possession
+
+# Scatter plot for goals scored per90 vs average possession
+ggplot(prem, aes(x = Poss, y = GF)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(title = "Goals Scored per90 vs Average Possession",
+       x = "Average Possession (%)",
+       y = "Goals Scored per90")
+```
+The scatter plot demonstrates a positive linear trend between possession and goals scored per game. Teams with higher possession percentages tend to score more goals, which suggests that controlling the game often leads to better attacking outcomes. However, there is still variability, indicating that other factors beyond possession influence goal-scoring effectiveness.
+
+### Net Spend vs Points
+
+```{r}
+#| label: net-spend-vs-points
+
+# Scatter plot for net spend vs point total
+ggplot(prem, aes(x = Balance, y = Pts)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Net Spend vs Point Total",
+       x = "Net Spend (in Million Euros)",
+       y = "Point Total")
+```
+The scatter plot between net spend and point total shows a slightly negative relationship, which is somewhat counterintuitive. This suggests that high spending teams do not always achieve higher point totals, potentially due to inefficiencies in spending or challenges in integrating new players. Teams with a lower or negative net spend can still achieve success, likely due to better tactical planning, consistency, and effective resource utilization.
+
+### Key Findings from EDA
