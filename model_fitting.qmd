@@ -1,0 +1,72 @@
+---
+title: "Model Fitting"
+author: "Dylan Li, Liam Quach, Brendan Callender"
+format: html
+editor: visual
+---
+
+## Load Packages
+
+```{r}
+#| label: load-libraries
+
+library(tidyverse)
+library(lme4)
+```
+
+## Read in Data
+
+```{r}
+#| label: read-data
+
+prem <- read_csv(here::here("data", "prem_multi_level.csv"))
+```
+
+## Fit Models
+
+```{r}
+#| label: fit-mixed-models
+
+model0 <- lmer(Pts ~ 1 + (1 | Squad), data = prem) # null model
+model1 <- lmer(Pts ~ 1 + GF + GA + Balance + Age + Poss + Sh + Dist + xG_cat + (1 | Squad), data = prem) # model with predictors
+```
+
+```{r}
+#| label: show-model-results
+
+cat("Null Model:\n\n")
+summary(model0)
+cat("\n\n\nFull Model:\n\n")
+summary(model1)
+```
+
+```{r}
+#| label: ranef-distributions
+#| layout-ncol: 2
+
+ranef(model0)$Squad %>%
+  .[,1] %>%
+  hist()
+
+ranef(model1)$Squad %>%
+  .[,1] %>%
+  hist()
+```
+
+```{r}
+#| label: model-0-shrinkage
+
+fits = predict(model0, prem); prem$fits <- fits
+prem %>%
+  group_by(Squad) %>%
+  mutate(mean_pts = mean(Pts)) %>%
+  ungroup() %>%
+  ggplot(aes(y = Squad, x = mean_pts, group = Squad)) +
+  geom_point() +
+  geom_point(aes(y = Squad, x = fits),  col = "red") +
+  geom_point(aes(x = Pts), col="grey") + 
+  theme_bw() +  
+  geom_vline(xintercept = mean(prem$Pts), col="black") +
+  labs(y = "", x = "Points", title = "Random Effect Shrinkage") +
+  theme(plot.title.position = "plot") 
+```
