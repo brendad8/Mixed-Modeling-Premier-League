@@ -35,6 +35,7 @@ To create our multi-level dataset, we had to scrape data from fbref.com (Footbal
 
 library(tidyverse)
 library(labelled)
+library(lme4)
 ```
 
 ### Load Data
@@ -100,7 +101,15 @@ prem %>%
   theme(legend.position = "none") +
   scale_fill_identity() +
   scale_color_identity() +
-  theme_minimal()
+  theme_minimal() +
+  labs(
+    x = "Points",
+    y = "",
+    title = "Distribution of Points by Team",
+    caption = "Data from Fbref.com"
+    ) +
+  theme_minimal() +
+  theme(plot.title.position = "plot")
 
 ```
 
@@ -130,7 +139,8 @@ ggplot(prem, aes(x = Poss, y = GF)) +
   geom_smooth(method = "lm", se = FALSE, color = "blue") +
   labs(title = "Goals Scored per90 vs Average Possession",
        x = "Average Possession (%)",
-       y = "Goals Scored per90")
+       y = "Goals Scored per90",
+       caption = "Data from Fbref.com")
 ```
 
 The scatter plot demonstrates a positive linear trend between possession and goals scored per game. Teams with higher possession percentages tend to score more goals, which suggests that controlling the game often leads to better attacking outcomes. However, there is still variability, indicating that other factors beyond possession influence goal-scoring effectiveness.
@@ -147,12 +157,15 @@ prem %>%
     geom_point() +
     geom_text(aes(x = Balance, y = Pts, label = label), hjust = -0.1, color = "#034694") +
     geom_smooth(method = "lm", se = FALSE, color = "red") +
-    labs(title = "Premier League Point Totals by Net Spend (2017-2023)",
+    labs(title = "Premier League Point Totals by Net Spend (2017-2023 Seasons)",
+         caption = "Data from Fbref.com & Transfermarkt.com",
          x = "Net Spend (in Million Euros)",
          y = "Point Total") +
   theme_bw() +
   theme(
-    plot.title.position = "plot"
+    plot.title.position = "plot",
+    plot.title = element_text(size = 12)
+    
   )
 
 ```
@@ -163,4 +176,31 @@ The scatter plot between net spend and point total shows a slightly negative rel
 
 ```{r}
 
+```
+
+### Null Model + Shrinkage Plot
+
+```{r}
+#| label: null-model
+
+model0 <- lmer(Pts ~ 1 + (1 | Squad), data = prem)
+summary(model0)
+```
+
+```{r}
+#| label: null-model-fitted-vals-plot
+
+fits = predict(model0, prem); prem$fits <- fits
+prem %>%
+  group_by(Squad) %>%
+  mutate(mean_pts = mean(Pts)) %>%
+  ungroup() %>%
+  ggplot(aes(y = Squad, x = mean_pts, group = Squad)) +
+  geom_point() +
+  geom_point(aes(y = Squad, x = fits),  col = "red") +
+  geom_point(aes(x = Pts), col="grey") + 
+  theme_bw() +  
+  geom_vline(xintercept = mean(prem$Pts), col="black") +
+  labs(y = "", x = "Points", title = "Random Effect Shrinkage") +
+  theme(plot.title.position = "plot") 
 ```
