@@ -32,9 +32,12 @@ To create our multi-level dataset, we had to scrape data from fbref.com (Footbal
 
 ```{r}
 #| label: load-packages
+#| code-fold: true
+#| message: false
 
 library(tidyverse)
 library(labelled)
+library(corrplot)
 library(lme4)
 ```
 
@@ -42,6 +45,7 @@ library(lme4)
 
 ```{r}
 #| label: read-in-data
+#| message: false
 
 prem <- read_csv(here::here("data", "prem_multi_level.csv"))
 ```
@@ -118,11 +122,10 @@ prem %>%
 #| label: correlation-plot
 
 # Create a correlation plot to identify relationships between numeric variables
-library(corrplot)
 corr_matrix <- prem %>% 
   select(GF, GA, xG, xGA, Poss, Age, Sh, SoT, Dist, SoTA, CS, Expenditure, Arrivals, Income, Departures, Balance) %>% 
   cor()
-corrplot(corr_matrix, method = "color", type = "lower", tl.cex = 0.7, tl.pos = "lt", addCoef.col = "black")
+corrplot(corr_matrix, method = "color", type = "lower", tl.cex = 0.7, tl.pos = "lt")#, addCoef.col = "black")
 ```
 
 The correlation plot reveals some strong relationships between variables. Goals Scored (GF) has a strong positive correlation with Expected Goals (xG) (0.93) and Shots on Target (SoT) (0.91), indicating that creating high-quality chances and converting them are key factors for success. Conversely, Goals Against (GA) is negatively correlated with metrics like Clean Sheets (CS) (-0.88), suggesting that teams that concede fewer goals also have more clean sheets. However, Net Spend (Balance) has a weak correlation with point total (Pts), implying that spending money does not necessarily guarantee better results.
@@ -173,12 +176,6 @@ prem %>%
 ```
 
 The scatter plot between net spend and point total shows a slightly negative relationship, which is somewhat counter intuitive. This suggests that high spending teams do not always achieve higher point totals, potentially due to inefficiencies in spending or challenges in integrating new players. Teams with a lower or negative net spend can still achieve success, likely due to better tactical planning, consistency, and effective resource utilization.
-
-### Key Findings from EDA
-
-```{r}
-
-```
 
 ### Null Model + Shrinkage Plot
 
