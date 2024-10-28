@@ -25,3 +25,21 @@ To create our multi-level dataset, we had to scrape data from fbref.com (Footbal
 ### Clean Data
 
 ![](images/data_clean_2.png)
+
+## 2. Exploratory Data Analysis
+
+### Library Package
+
+```{r}
+#| label: load-packages
+
+library(tidyverse)
+```
+
+### Load Data
+
+```{r}
+#| label: read-in-data
+
+prem <- read_csv(here::here("data", "prem_multi_level.csv"))
+```
