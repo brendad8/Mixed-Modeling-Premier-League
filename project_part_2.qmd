@@ -1,7 +1,7 @@
 ---
 title: "Project Part II"
 author: "Dylan Li, Liam Quach, Brendan Callender"
-format: docx
+format: pdf
 editor: visual
 embed-resources: true
 ---
