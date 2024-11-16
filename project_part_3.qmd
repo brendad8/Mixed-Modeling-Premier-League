@@ -1,0 +1,74 @@
+---
+title: "Project Part 3"
+author: "Liam Quach, Dylan Li, and Brendan Callender"
+format: pdf
+editor: visual
+---
+
+```{r}
+#| label: load-libraries
+#| include: false
+
+library(tidyverse)
+library(lme4)
+library(nlme)
+```
+
+```{r}
+#| label: read-data
+
+prem <- read_csv(here::here("data", "prem_multi_level.csv"))
+prem_colors <- read_csv(here::here("data", "prem_team_colors.csv"), show_col_types = FALSE)
+```
+
+## Part I: Proposal and Data Assembly
+
+### Research Questions
+
+What are the most important factors associated with higher/lower point totals in the English Premier League between 2017 and 2023.
+
+Is spending more money in the off-season associated with earning more points? Does this relationship change depending on how much the league as a whole spent?
+
+Is having a better offense or defense more important for earning more points in a season?
+
+Does important is luck/chance with respect to premier league point totals. (We can measure luck as Expected goals scored vs Actual goals scored & Expected goals conceded vs Actual goals conceded)
+
+### Data
+
+We are using data scraped from fbref and transfermark for the English premier league capturing the 2017 season up to and including the 2023 season. The response is the total points a team achieved for that given season. The predictors include variables relating to a teams offensive and defensive performance and a teams off-season expenditures.
+
+### Data Multi-level Structure
+
+![](images/multi_level_structure.png)
+
+### Variable Chart
+
++------------------------------+--------------+-------------------------------+------------------------------------+
+| Name                         | Role         | Type                          | Values                             |
++==============================+==============+===============================+====================================+
+| Points                       | Response     | Quantitative                  | \>0                                |
++------------------------------+--------------+-------------------------------+------------------------------------+
+| Goals/90                     | L1 Predictor | Quantitative                  | \>0                                |
++------------------------------+--------------+-------------------------------+------------------------------------+
+| Goals Against/90             | L1 Predictor | Quantitative                  | \>0                                |
++------------------------------+--------------+-------------------------------+------------------------------------+
+| Net Spend                    | L1 Predictor | Quantitative                  | -inf, inf                          |
++------------------------------+--------------+-------------------------------+------------------------------------+
+| Average Net Spend (for team) | L2 Predictor | Quantitative                  | -inf, inf                          |
++------------------------------+--------------+-------------------------------+------------------------------------+
+| Luck Level                   | L1 Predictor | Categorical                   | (Lucky offense, Lucky defense),    |
+|                              |              |                               |                                    |
+|                              |              |                               | (Unlucky offense, Lucky defense),  |
+|                              |              |                               |                                    |
+|                              |              |                               | (Lucky offense, Lucky defense),    |
+|                              |              |                               |                                    |
+|                              |              |                               | (Unlucky offense, Unlucky defense) |
++------------------------------+--------------+-------------------------------+------------------------------------+
+| ...                          | ...          | ...                           | ...                                |
++------------------------------+--------------+-------------------------------+------------------------------------+
+| Other ideas for L2           |              |                               |                                    |
++------------------------------+--------------+-------------------------------+------------------------------------+
+| Team Cateogry                | L2 Predictor |                               | Top 6, mid-table, relegation...    |
++------------------------------+--------------+-------------------------------+------------------------------------+
+|                              |              |                               |                                    |
++------------------------------+--------------+-------------------------------+------------------------------------+
