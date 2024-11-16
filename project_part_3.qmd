@@ -11,6 +11,8 @@ editor: visual
 
 library(tidyverse)
 library(lme4)
+library(labelled)
+library(corrplot)
 library(nlme)
 ```
 
@@ -43,32 +45,145 @@ We are using data scraped from fbref and transfermark for the English premier le
 
 ### Variable Chart
 
-+------------------------------+--------------+--------------+------------------------------------+
-| Name                         | Role         | Type         | Values                             |
-+==============================+==============+==============+====================================+
-| Points                       | Response     | Quantitative | \>0                                |
-+------------------------------+--------------+--------------+------------------------------------+
-| Goals/90                     | L1 Predictor | Quantitative | \>0                                |
-+------------------------------+--------------+--------------+------------------------------------+
-| Goals Against/90             | L1 Predictor | Quantitative | \>0                                |
-+------------------------------+--------------+--------------+------------------------------------+
-| Net Spend                    | L1 Predictor | Quantitative | -inf, inf                          |
-+------------------------------+--------------+--------------+------------------------------------+
-| Average Net Spend (for team) | L2 Predictor | Quantitative | -inf, inf                          |
-+------------------------------+--------------+--------------+------------------------------------+
-| Luck Level                   | L1 Predictor | Categorical  | (Lucky offense, Lucky defense),    |
-|                              |              |              |                                    |
-|                              |              |              | (Unlucky offense, Lucky defense),  |
-|                              |              |              |                                    |
-|                              |              |              | (Lucky offense, Lucky defense),    |
-|                              |              |              |                                    |
-|                              |              |              | (Unlucky offense, Unlucky defense) |
-+------------------------------+--------------+--------------+------------------------------------+
-| ...                          | ...          | ...          | ...                                |
-+------------------------------+--------------+--------------+------------------------------------+
-| Other ideas for L2           |              |              |                                    |
-+------------------------------+--------------+--------------+------------------------------------+
-| Team Cateogry                | L2 Predictor |              | Top 6, mid-table, relegation...    |
-+------------------------------+--------------+--------------+------------------------------------+
-|                              |              |              |                                    |
-+------------------------------+--------------+--------------+------------------------------------+
++------------------------------+--------------+----------------+------------------------------------+
+| Name                         | Role         | Type           | Values                             |
++==============================+==============+================+====================================+
+| Points                       | Response     | Quantitative   | \>0                                |
++------------------------------+--------------+----------------+------------------------------------+
+| Goals/90                     | L1 Predictor | Quantitative   | \>0                                |
++------------------------------+--------------+----------------+------------------------------------+
+| Goals Against/90             | L1 Predictor | Quantitative   | \>0                                |
++------------------------------+--------------+----------------+------------------------------------+
+| Net Spend                    | L1 Predictor | Quantitative   | -inf, inf                          |
++------------------------------+--------------+----------------+------------------------------------+
+| Average Net Spend (for team) | L2 Predictor | Quantitative   | -inf, inf                          |
++------------------------------+--------------+----------------+------------------------------------+
+| Luck Level                   | L1 Predictor | Categorical    | (Lucky offense, Lucky defense),    |
+|                              |              |                |                                    |
+|                              |              |                | (Unlucky offense, Lucky defense),  |
+|                              |              |                |                                    |
+|                              |              |                | (Lucky offense, Lucky defense),    |
+|                              |              |                |                                    |
+|                              |              |                | (Unlucky offense, Unlucky defense) |
++------------------------------+--------------+----------------+------------------------------------+
+| ...                          | ...          | ...            | ...                                |
++------------------------------+--------------+----------------+------------------------------------+
+| Other ideas for L2           |              |                |                                    |
++------------------------------+--------------+----------------+------------------------------------+
+| Team Cateogry                | L2 Predictor |                | Top 6, mid-table, relegation...    |
++------------------------------+--------------+----------------+------------------------------------+
+|                              |              |                |                                    |
++------------------------------+--------------+----------------+------------------------------------+
+
+## Part II: Exploratory Data Analysis
+
+```{r}
+#| label: dot-plot-points-dist
+
+squad_colors <- read_csv(here::here("data", "prem_team_colors.csv"), show_col_types = FALSE)
+
+prem %>%
+  left_join(squad_colors, by = "Squad") %>%
+  ggplot() +
+  geom_dotplot(aes(x = Pts, y = Squad, fill = hex_fill, color = hex_color), binwidth = 1, dotsize = .75) +
+  theme(legend.position = "none") +
+  scale_fill_identity() +
+  scale_color_identity() +
+  theme_bw() +
+  labs(
+    x = "Points",
+    y = "",
+    title = "Distribution of Points by Team (2017-2023 Seasons)",
+    caption = "Data from Fbref.com"
+    ) +
+  theme(plot.title.position = "plot")
+```
+
+```{r}
+#| label: correlation-plot
+
+# Create a correlation plot to identify relationships between numeric variables
+corr_matrix <- prem %>% 
+  select(GF, GA, xG, xGA, Poss, Age, Sh, SoT, Dist, SoTA, CS, Expenditure, Arrivals, Income, Departures, Balance) %>% 
+  cor()
+corrplot(corr_matrix, method = "color", type = "lower", tl.cex = 0.7, tl.pos = "lt")#, addCoef.col = "black")
+```
+
+```{r}
+#| label: goals-and-points-plot
+
+prem %>%
+  ggplot() +
+  geom_point(aes(x = GF, GA, color = Pts)) +
+  theme_bw() +
+  theme(plot.title.position = "plot") +
+  labs(x = "Goals Scored per game",
+       y = "Goals Conceded per game",
+       legend = "Points",
+       caption = "Data from Fbref.com",
+       title = "Goals Scored and Goals Conceded vs Points")
+```
+
+```{r}
+#| label: team-possession-plot
+
+prem %>%
+  left_join(prem_colors, by = "Squad") %>%
+  ggplot() +
+  geom_point(aes(x = Poss, y = Pts, fill = hex_fill, color = hex_color)) +
+  theme_bw() +
+  scale_fill_identity() +
+  scale_color_identity() +
+  theme(plot.title.position = "plot",
+        legend.position = "none") +
+  labs(y = "Points",
+       x = "Possession",
+       caption = "Data from Fbref.com",
+       title = "Team Posession vs Points")
+```
+
+```{r}
+#| label: net-spend-vs-points-l1
+#| message: false
+
+# Scatter plot for net spend vs point total
+prem %>%
+  left_join(prem_colors, by = "Squad") %>%
+  mutate(label = ifelse(Balance < -400, paste0(Squad, ": ", Season), "")) %>%
+  ggplot(aes(x = Balance, y = Pts)) +
+    geom_point(aes(color = hex_fill)) +
+    geom_text(aes(x = Balance, y = Pts, label = label), hjust = -0.1, color = "#034694") +
+    geom_smooth(method = "lm", se = FALSE, color = "red") +
+    labs(title = "Premier League Point Totals by Net Spend (2017-2023 Seasons)",
+         caption = "Data from Fbref.com & Transfermarkt.com",
+         x = "Net Spend (in Million Euros)",
+         y = "Points") +
+  theme_bw() +
+  scale_color_identity() +
+  theme(
+    plot.title.position = "plot",
+    plot.title = element_text(size = 12)
+  )
+```
+
+```{r}
+#| label: spend-by-team-l2
+
+prem %>%
+  group_by(Squad) %>%
+  summarize(Mean_Balance = -1*mean(Balance)) %>%
+  left_join(prem %>% select(Squad, Pts), by = "Squad") %>%
+  left_join(prem_colors, by = "Squad") %>%
+  ggplot() +
+  geom_point(aes(x = Mean_Balance, y = Pts, fill = hex_fill, color = hex_color)) +
+  theme_bw() +
+  scale_fill_identity() +
+  scale_color_identity() +
+  theme(plot.title.position = "plot") +
+  labs(title = "Premier League Point Totals by Average Spend",
+  subtitle = "(2017-2023 Seasons)",
+       caption = "Data from Fbref.com & Transfermarkt.com",
+       x = "Average Spend (in Million Euros)",
+       y = "Points")
+  
+```
