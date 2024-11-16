@@ -45,59 +45,37 @@ We are using data scraped from fbref and transfermark for the English premier le
 
 ### Variable Chart
 
-+------------------------------+--------------+----------------+------------------------------------+
-| Name                         | Role         | Type           | Values                             |
-+==============================+==============+================+====================================+
-| Points                       | Response     | Quantitative   | \>0                                |
-+------------------------------+--------------+----------------+------------------------------------+
-| Goals/90                     | L1 Predictor | Quantitative   | \>0                                |
-+------------------------------+--------------+----------------+------------------------------------+
-| Goals Against/90             | L1 Predictor | Quantitative   | \>0                                |
-+------------------------------+--------------+----------------+------------------------------------+
-| Net Spend                    | L1 Predictor | Quantitative   | -inf, inf                          |
-+------------------------------+--------------+----------------+------------------------------------+
-| Average Net Spend (for team) | L2 Predictor | Quantitative   | -inf, inf                          |
-+------------------------------+--------------+----------------+------------------------------------+
-| Luck Level                   | L1 Predictor | Categorical    | (Lucky offense, Lucky defense),    |
-|                              |              |                |                                    |
-|                              |              |                | (Unlucky offense, Lucky defense),  |
-|                              |              |                |                                    |
-|                              |              |                | (Lucky offense, Lucky defense),    |
-|                              |              |                |                                    |
-|                              |              |                | (Unlucky offense, Unlucky defense) |
-+------------------------------+--------------+----------------+------------------------------------+
-| ...                          | ...          | ...            | ...                                |
-+------------------------------+--------------+----------------+------------------------------------+
-| Other ideas for L2           |              |                |                                    |
-+------------------------------+--------------+----------------+------------------------------------+
-| Team Cateogry                | L2 Predictor |                | Top 6, mid-table, relegation...    |
-+------------------------------+--------------+----------------+------------------------------------+
-|                              |              |                |                                    |
-+------------------------------+--------------+----------------+------------------------------------+
++------------------------------+--------------+--------------+------------------------------------+
+| Name                         | Role         | Type         | Values                             |
++==============================+==============+==============+====================================+
+| Points                       | Response     | Quantitative | \>0                                |
++------------------------------+--------------+--------------+------------------------------------+
+| Goals/90                     | L1 Predictor | Quantitative | \>0                                |
++------------------------------+--------------+--------------+------------------------------------+
+| Goals Against/90             | L1 Predictor | Quantitative | \>0                                |
++------------------------------+--------------+--------------+------------------------------------+
+| Net Spend                    | L1 Predictor | Quantitative | -inf, inf                          |
++------------------------------+--------------+--------------+------------------------------------+
+| Average Net Spend (for team) | L2 Predictor | Quantitative | -inf, inf                          |
++------------------------------+--------------+--------------+------------------------------------+
+| Luck Level                   | L1 Predictor | Categorical  | (Lucky offense, Lucky defense),    |
+|                              |              |              |                                    |
+|                              |              |              | (Unlucky offense, Lucky defense),  |
+|                              |              |              |                                    |
+|                              |              |              | (Lucky offense, Lucky defense),    |
+|                              |              |              |                                    |
+|                              |              |              | (Unlucky offense, Unlucky defense) |
++------------------------------+--------------+--------------+------------------------------------+
+| ...                          | ...          | ...          | ...                                |
++------------------------------+--------------+--------------+------------------------------------+
+| Other ideas for L2           |              |              |                                    |
++------------------------------+--------------+--------------+------------------------------------+
+| Team Cateogry                | L2 Predictor |              | Top 6, mid-table, relegation...    |
++------------------------------+--------------+--------------+------------------------------------+
+|                              |              |              |                                    |
++------------------------------+--------------+--------------+------------------------------------+
 
 ## Part II: Exploratory Data Analysis
-
-```{r}
-#| label: dot-plot-points-dist
-
-squad_colors <- read_csv(here::here("data", "prem_team_colors.csv"), show_col_types = FALSE)
-
-prem %>%
-  left_join(squad_colors, by = "Squad") %>%
-  ggplot() +
-  geom_dotplot(aes(x = Pts, y = Squad, fill = hex_fill, color = hex_color), binwidth = 1, dotsize = .75) +
-  theme(legend.position = "none") +
-  scale_fill_identity() +
-  scale_color_identity() +
-  theme_bw() +
-  labs(
-    x = "Points",
-    y = "",
-    title = "Distribution of Points by Team (2017-2023 Seasons)",
-    caption = "Data from Fbref.com"
-    ) +
-  theme(plot.title.position = "plot")
-```
 
 ```{r}
 #| label: correlation-plot
@@ -154,7 +132,8 @@ prem %>%
     geom_point(aes(color = hex_fill)) +
     geom_text(aes(x = Balance, y = Pts, label = label), hjust = -0.1, color = "#034694") +
     geom_smooth(method = "lm", se = FALSE, color = "red") +
-    labs(title = "Premier League Point Totals by Net Spend (2017-2023 Seasons)",
+    labs(title = "Premier League Point Totals by Net Spend",
+         subtitle = "(2017-2023 Seasons)",
          caption = "Data from Fbref.com & Transfermarkt.com",
          x = "Net Spend (in Million Euros)",
          y = "Points") +
@@ -187,3 +166,47 @@ prem %>%
        y = "Points")
   
 ```
+
+## Part III: Modeling Results
+
+### Variability Across Teams (Level 2)
+
+```{r}
+#| label: dot-plot-points-dist
+
+squad_colors <- read_csv(here::here("data", "prem_team_colors.csv"), show_col_types = FALSE)
+
+prem %>%
+  left_join(squad_colors, by = "Squad") %>%
+  ggplot() +
+  geom_dotplot(aes(x = Pts, y = Squad, fill = hex_fill, color = hex_color), binwidth = 1, dotsize = .75) +
+  theme(legend.position = "none") +
+  scale_fill_identity() +
+  scale_color_identity() +
+  theme_bw() +
+  labs(
+    x = "Points",
+    y = "",
+    title = "Distribution of Points by Team (2017-2023 Seasons)",
+    caption = "Data from Fbref.com"
+    ) +
+  theme(plot.title.position = "plot")
+```
+
+```{r}
+model00 <- lm(Pts ~ Squad, data = prem)
+anova(model00)
+```
+
+### Null Model
+
+```{r}
+model0 <- lmer(Pts ~ 1 + (1 | Squad), data = prem)
+summary(model0)
+```
+
+### Add Level 1 Vars
+
+### Add Level 2 Vars
+
+### Fit Random Slopes
