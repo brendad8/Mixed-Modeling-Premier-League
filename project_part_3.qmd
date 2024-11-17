@@ -23,6 +23,13 @@ prem <- read_csv(here::here("data", "prem_multi_level.csv"))
 prem_colors <- read_csv(here::here("data", "prem_team_colors.csv"), show_col_types = FALSE)
 ```
 
+```{r}
+prem <- prem %>%
+  mutate(xG_diff = GF - xG,
+         xGA_diff = GA - xGA,
+         SoT_diff = SoT - SoTA)
+```
+
 ## Part I: Proposal and Data Assembly
 
 ### Research Questions
@@ -82,7 +89,7 @@ We are using data scraped from fbref and transfermark for the English premier le
 
 # Create a correlation plot to identify relationships between numeric variables
 corr_matrix <- prem %>% 
-  select(GF, GA, xG, xGA, Poss, Age, Sh, SoT, Dist, SoTA, CS, Expenditure, Arrivals, Income, Departures, Balance) %>% 
+  select(GF, GA, xG, xGA, Poss, Age, Sh, SoT, Dist, SoTA, CS, Expenditure, Arrivals, Income, Departures, Balance, Pts) %>% 
   cor()
 corrplot(corr_matrix, method = "color", type = "lower", tl.cex = 0.7, tl.pos = "lt")#, addCoef.col = "black")
 ```
@@ -163,7 +170,8 @@ prem %>%
   subtitle = "(2017-2023 Seasons)",
        caption = "Data from Fbref.com & Transfermarkt.com",
        x = "Average Spend (in Million Euros)",
-       y = "Points")
+       y = "Points") +
+  geom_smooth(aes(x = Mean_Balance, y = Pts), method = "lm", se = FALSE, color = "red")
   
 ```
 
@@ -207,6 +215,42 @@ summary(model0)
 
 ### Add Level 1 Vars
 
+```{r}
+model1 <- lmer(Pts ~ GF + GA + (1 | Squad), data = prem)
+summary(model1)
+```
+
+```{r}
+model1_1 <- lmer(Pts ~ GF + GA + xG_cat + (1 | Squad), data = prem)
+model1_2<- lmer(Pts ~ GF + GA + xG_diff + xGA_diff + (1 | Squad), data = prem)
+model1_3<- lmer(Pts ~ GF + GA + Balance + (1 | Squad), data = prem)
+model1_4<- lmer(Pts ~ GF + GA + SoT_diff + (1 | Squad), data = prem)
+```
+
+```{r}
+anova(model1, model1_1)
+cat("\n\n")
+anova(model1, model1_2)
+cat("\n\n")
+anova(model1, model1_3)
+cat("\n\n")
+anova(model1, model1_4)
+```
+
 ### Add Level 2 Vars
+
+```{r}
+prem <- prem %>%
+  left_join(prem %>%
+              group_by(Squad) %>%
+              summarize(Balance_mean = -1*mean(Balance)),
+            by = "Squad"
+  )
+```
+
+```{r}
+model2 <- lmer(Pts ~ GF + GA + Balance_mean + (1 | Squad), data = prem)
+summary(model2)
+```
 
 ### Fit Random Slopes
