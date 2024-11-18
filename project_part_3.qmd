@@ -254,3 +254,10 @@ summary(model2)
 ```
 
 ### Fit Random Slopes
+
+### Trying Longitudinal Models
+
+```{r}
+model0 <- lmer(Pts ~ 1 + Season + (1 | Squad), data = prem)
+summary(model0)
+```
