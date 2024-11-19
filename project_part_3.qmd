@@ -311,7 +311,28 @@ No variables are insignificant so none will be removed.
 
 ### Fit Random Slopes
 
+```{r}
+model3 <- lmer(Pts ~ GF + GA + Balance_mean + (1 + GA | Squad), data = prem)
+summary(model3)
+```
 
+```{r}
+teamAsFactor = factor(prem$Squad)
+preds = predict(model3, newdata = prem)
+ggplot(prem, aes(x = GA , y = preds , group = Squad, color = teamAsFactor )) +
+geom_smooth(method = "lm", alpha = .5, se = FALSE) +
+geom_point(data = prem, aes(y = Pts, color=teamAsFactor), alpha = .5) +
+  theme_bw()
+```
+
+We can see that as the goals against the team in that season increases, the points scored for that team in that season decreases. It also appears that the decrease in points for the goals scored against the team is greater if the team has higher scores.
+
+The standard deviation of the slopes is 1.190, this means that all of the slopes are negative as the intercept for slopes is -21. And this also means that the slope generally does not change that much as the standard deviation of the slope is small relative to the slope fixed effect.
+
+```{r}
+anova(model2, model3)
+```
+The difference in parameters between the two models is the variability in random slopes and the correlation of the slopes to the intercepts. Adding random slopes does not improve the model fit since the p-value is very large.
 
 ### Trying Longitudinal Models
 
