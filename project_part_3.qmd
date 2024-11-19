@@ -217,7 +217,7 @@ model0 <- lmer(Pts ~ 1 + (1 | Squad), data = prem)
 summary(model0)
 ```
 
-The variance for the random effects of squad means measures how much variability there is in the average points scored across the seasons depending on the team.
+The variance for the random effects of squad means measures how much variability there is in the average points scored depending on the team.
 
 The variance for the residual measures the within team variability of points across the seasons. That is, when examining the same team, how much variance is there in points scored from season to season.
 
@@ -242,12 +242,12 @@ summary(model1)
 anova(model0, model1)
 ```
 
-Model1 is significantly better coompared to model0, we can see this based off the small p value from the chi square statistic. The chi squared statistic is found by taking the difference of the two loglik values and multiplying by 2, the df is the difference in number of parameters. The AIC value for model 1 of 829 is roughly 290 lower than the AIC of the null model.
+Model1 is significantly better compared to model0, we can see this based off the small p value from the chi square statistic. The chi squared statistic is found by taking the difference of the two loglik values and multiplying by 2, the df is the difference in number of parameters. The AIC value for model 1 of 829 is roughly 290 lower than the AIC of the null model.
 
 ```{r}
 (255.32-0.9551)/255.32
 ```
-99.6% of the variation in teams intercept is explained by including the goals scored (GF) and goals against (GA) variables. This means that GF and GA accounts for the majority of differences in points scored between teams, which is what we expected to see.
+99.6% of the variation in teams intercept is explained by including the goals scored (GF) and goals against (GA) variables. This means that GF and GA accounts for the majority of differences in points scored between teams, which is what we expected to see as teams who scored more goals and defended more goals will have more points.
 
 ```{r}
 (99.66-19.9221)/99.66
@@ -289,7 +289,25 @@ prem <- prem %>%
 ```{r}
 model2 <- lmer(Pts ~ GF + GA + Balance_mean + (1 | Squad), data = prem)
 summary(model2)
+
+anova(model1, model2)
 ```
+
+Model2 is significantly better compared to model1, we can see this based off the small p value of 0.0098 from the chi square statistic.  The AIC value for model 2 of 824 is only roughly 5 lower than the AIC of model 1. This means that while adding in average spending of the team does improve the model fit, it is not as significant as model1 is to model0.
+
+```{r}
+(0.9551-0)/0.9551
+```
+
+From model1 to model2, 100% of the variation in the intercepts of teams is explained, this means that along with goals and goals against, adding in average team spending perfectly explains all variation in the average points across the teams.
+
+```{r}
+(19.9221-19.96)/19.9221
+```
+
+No within team variation in points scored is explained by average team spending, this makes sense as average team spending is a level 2 variable, so when examining an individual team, their average team spending will remain the same across all seasons.
+
+No variables are insignificant so none will be removed.
 
 ### Fit Random Slopes
 
