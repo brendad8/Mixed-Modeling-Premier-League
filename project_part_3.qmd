@@ -229,14 +229,32 @@ performance::icc(model0)
 
 The intraclass correlation of 0.713 means that the points scored across the seasons for each team is highly correlated. The ICC value is substantial, and it makes sense as a high performing team should score highly across different seasons, while weaker, lower performing teams would likely score low across different seasons.
 
-### NEED likelihood, deviance, and AIC values HERE
+Log Likelihood: -556.49
+Deviance: 1112.97
+AIC: 1118.97
 
 ### Add Level 1 Vars
 
 ```{r}
 model1 <- lmer(Pts ~ GF + GA + (1 | Squad), data = prem)
 summary(model1)
+
+anova(model0, model1)
 ```
+
+Model1 is significantly better coompared to model0, we can see this based off the small p value from the chi square statistic. The chi squared statistic is found by taking the difference of the two loglik values and multiplying by 2, the df is the difference in number of parameters. The AIC value for model 1 of 829 is roughly 290 lower than the AIC of the null model.
+
+```{r}
+(255.32-0.9551)/255.32
+```
+99.6% of the variation in teams intercept is explained by including the goals scored (GF) and goals against (GA) variables. This means that GF and GA accounts for the majority of differences in points scored between teams, which is what we expected to see.
+
+```{r}
+(99.66-19.9221)/99.66
+```
+80% of the season to season variation is explained by including the GF and GA variables.
+
+Since both of these variables are significant, we will try adding in different 3rd variables to see how the model performs.
 
 ```{r}
 model1_1 <- lmer(Pts ~ GF + GA + xG_cat + (1 | Squad), data = prem)
@@ -254,6 +272,8 @@ anova(model1, model1_3)
 cat("\n\n")
 anova(model1, model1_4)
 ```
+
+None of these additional variables significantly improve our model as the chi-square value is small and the p value is large for all of these anova tests, so we will not be including any of these variables in our level 1 model.
 
 ### Add Level 2 Vars
 
