@@ -201,14 +201,14 @@ prem %>%
   theme(plot.title.position = "plot")
 ```
 
-Examining the graph of points scored across the seasons for the different teams, we can see a vast difference in both the ranges of points and variability in points depending on the team. This graph suggests strongly that the variation in points scored across the different teams is significant.
+Examining the graph of points across the seasons for the different teams, we can see a vast difference in both the ranges of points and variability in points depending on the team. This graph suggests strongly that the variation in points scored across the different teams is significant.
 
 ```{r}
 model00 <- lm(Pts ~ Squad, data = prem)
 anova(model00)
 ```
 
-The ANOVA with points scored and the teams grouping variable confirms what the graph has shown. There is a statistically significant variation in points scored across different teams.
+The ANOVA with points and the teams grouping variable confirms what the graph has shown. There is a statistically significant variation in points across different teams.
 
 ### Null Model
 
@@ -217,17 +217,17 @@ model0 <- lmer(Pts ~ 1 + (1 | Squad), data = prem)
 summary(model0)
 ```
 
-The variance for the random effects of squad means measures how much variability there is in the average points scored depending on the team.
+The variance for the random effects of squad means measures how much variability there is in the average points depending on the team.
 
-The variance for the residual measures the within team variability of points across the seasons. That is, when examining the same team, how much variance is there in points scored from season to season.
+The variance for the residual measures the within team variability of points across the seasons. That is, when examining the same team, how much variance is there in points from season to season.
 
-The intercept of the fixed effect is the least squared mean of points scored across seasons across teams.
+The intercept of the fixed effect is the least squared mean of points across seasons across teams.
 
 ```{r}
 performance::icc(model0)
 ```
 
-The intraclass correlation of 0.713 means that the points scored across the seasons for each team is highly correlated. The ICC value is substantial, and it makes sense as a high performing team should score highly across different seasons, while weaker, lower performing teams would likely score low across different seasons.
+The intraclass correlation of 0.713 means that the points across the seasons for each team is highly correlated. The ICC value is substantial, and it makes sense as a high performing team should score highly across different seasons, while weaker, lower performing teams would likely score low across different seasons.
 
 Log Likelihood: -556.49
 Deviance: 1112.97
@@ -247,7 +247,7 @@ Model1 is significantly better compared to model0, we can see this based off the
 ```{r}
 (255.32-0.9551)/255.32
 ```
-99.6% of the variation in teams intercept is explained by including the goals scored (GF) and goals against (GA) variables. This means that GF and GA accounts for the majority of differences in points scored between teams, which is what we expected to see as teams who scored more goals and defended more goals will have more points.
+99.6% of the variation in teams intercept is explained by including the goals scored (GF) and goals against (GA) variables. This means that GF and GA accounts for the majority of differences in points between teams, which is what we expected to see as teams who scored more goals and defended more goals will have more points.
 
 ```{r}
 (99.66-19.9221)/99.66
@@ -305,7 +305,7 @@ From model1 to model2, 100% of the variation in the intercepts of teams is expla
 (19.9221-19.96)/19.9221
 ```
 
-No within team variation in points scored is explained by average team spending, this makes sense as average team spending is a level 2 variable, so when examining an individual team, their average team spending will remain the same across all seasons.
+No within team variation in points is explained by average team spending, this makes sense as average team spending is a level 2 variable, so when examining an individual team, their average team spending will remain the same across all seasons.
 
 No variables are insignificant so none will be removed.
 
@@ -325,7 +325,7 @@ geom_point(data = prem, aes(y = Pts, color=teamAsFactor), alpha = .5) +
   theme_bw()
 ```
 
-We can see that as the goals against the team in that season increases, the points scored for that team in that season decreases. It also appears that the decrease in points for the goals scored against the team is greater if the team has higher scores.
+We can see that as the goals against the team in that season increases, the points for that team in that season decreases. It also appears that the decrease in points for the goals scored against the team is greater if the team has higher scores.
 
 The standard deviation of the slopes is 1.190, this means that all of the slopes are negative as the intercept for slopes is -21. And this also means that the slope generally does not change that much as the standard deviation of the slope is small relative to the slope fixed effect.
 
@@ -333,6 +333,27 @@ The standard deviation of the slopes is 1.190, this means that all of the slopes
 anova(model2, model3)
 ```
 The difference in parameters between the two models is the variability in random slopes and the correlation of the slopes to the intercepts. Adding random slopes does not improve the model fit since the p-value is very large.
+
+### Cross Level Interaction
+
+```{r}
+model4 <- lmer(Pts ~ GF + GA + Balance_mean + GA*Balance_mean + (1 + GA | Squad), data = prem)
+summary(model4)
+```
+
+The interaction of 0.0256 means that as the average spending for a team increases, the effect of having goals scored against that team lowers the points for that team less.
+
+```{r}
+(1.416-1.035)/1.416
+```
+
+About 27% of the variation in slopes from model3 to model4 is explained by the cross level interaction, it is not much but some amount of variation in the slope is explained.
+
+```{r}
+anova(model3, model4)
+```
+
+The cross level interaction model is not a significant model compared to the random slopes model.
 
 ### Trying Longitudinal Models
 
