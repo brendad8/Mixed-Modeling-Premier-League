@@ -201,10 +201,14 @@ prem %>%
   theme(plot.title.position = "plot")
 ```
 
+Examining the graph of points scored across the seasons for the different teams, we can see a vast difference in both the ranges of points and variability in points depending on the team. This graph suggests strongly that the variation in points scored across the different teams is significant.
+
 ```{r}
 model00 <- lm(Pts ~ Squad, data = prem)
 anova(model00)
 ```
+
+The ANOVA with points scored and the teams grouping variable confirms what the graph has shown. There is a statistically significant variation in points scored across different teams.
 
 ### Null Model
 
@@ -212,6 +216,20 @@ anova(model00)
 model0 <- lmer(Pts ~ 1 + (1 | Squad), data = prem)
 summary(model0)
 ```
+
+The variance for the random effects of squad means measures how much variability there is in the average points scored across the seasons depending on the team.
+
+The variance for the residual measures the within team variability of points across the seasons. That is, when examining the same team, how much variance is there in points scored from season to season.
+
+The intercept of the fixed effect is the least squared mean of points scored across seasons across teams.
+
+```{r}
+performance::icc(model0)
+```
+
+The intraclass correlation of 0.713 means that the points scored across the seasons for each team is highly correlated. The ICC value is substantial, and it makes sense as a high performing team should score highly across different seasons, while weaker, lower performing teams would likely score low across different seasons.
+
+### NEED likelihood, deviance, and AIC values HERE
 
 ### Add Level 1 Vars
 
