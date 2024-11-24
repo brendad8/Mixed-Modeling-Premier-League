@@ -9,6 +9,7 @@ editor: visual
 #| label: load-libraries
 #| include: false
 
+library(kableExtra)
 library(tidyverse)
 library(lme4)
 library(labelled)
@@ -18,12 +19,15 @@ library(nlme)
 
 ```{r}
 #| label: read-data
+#| include: false
 
 prem <- read_csv(here::here("data", "prem_multi_level.csv"))
 prem_colors <- read_csv(here::here("data", "prem_team_colors.csv"), show_col_types = FALSE)
 ```
 
 ```{r}
+#| include: false
+
 prem <- prem %>%
   mutate(xG_diff = GF - xG,
          xGA_diff = GA - xGA,
@@ -32,9 +36,30 @@ prem <- prem %>%
 
 ## Part I: Proposal and Data Assembly
 
+### Background
+
+The English Premier League (EPL) is the top tier of professional football (soccer) in England and is considered one of the most popular and competitive leagues in the world. The league is made up of twenty clubs (teams) that compete over a season for the Premier League title. Each year, three new clubs are promoted from the second division based on the previous year's results. These promoted teams replace the bottom three teams from the premier league for the previous year.
+
+Over the course of a season, each team plays 38 matches per season, facing every other team twice—once at home and once away. Teams are rewarded points as follows: 3 points for a win, 1 points for a draw, and 0 points for a loss. The team with the most points at the end of the 38-game season is crowned as Premier League Champions.
+
+For our project, we are interested in seeing which factors are associated of higher or lower point totals in the English Premier league. To address our main research question, we have collected data from the English Premier League for seasons between 2017 and 2023. We collected season-level data from two sites: rbref.com and transfermarkt.com. The data from fbref (football reference) includes total goals scored, total goals conceded, expected goals scored, expected goals conceded, average rate of possession (%) over the season, average age of club players, total shots, total shots on target, average distance of shots from goal, total points awarded over the season, and more. The data scraped for each club from transfermarkt related to each clubs activity in the transfer market that season. These variables included money spent on incoming players, money gained on outgoing players, net spend, number of players in, and number of players out. See example rows of data below.
+
+```{r}
+#| echo: false
+
+prem %>%
+  select(Squad, Season, GF, GA, xG, xGA, Age, Poss, Expenditure, Income, Pts) %>%
+  mutate(
+    Season=str_split_i(Season, "-", 1),
+    across(where(is.double), .fns = ~round(.x, 2))
+    ) %>%
+  filter(Squad %in% c("Arsenal", "Chelsea", "Everton")) %>%
+  head(3)
+```
+
 ### Research Questions
 
-What are the most important factors associated with higher/lower point totals in the English Premier League between 2017 and 2023.
+What are the most important factors associated with higher/lower point totals in the English Premier League between 2017 and 2023?
 
 Is spending more money in the off-season associated with earning more points? Does this relationship change depending on how much the league as a whole spent?
 
@@ -122,9 +147,10 @@ prem %>%
   theme(plot.title.position = "plot",
         legend.position = "none") +
   labs(y = "Points",
-       x = "Possession",
+       x = "Average Possession (%) over Season",
        caption = "Data from Fbref.com",
-       title = "Team Posession vs Points")
+       title = "Team Posession vs Points",
+       subtitle = "Color by Team")
 ```
 
 ```{r}
@@ -157,11 +183,12 @@ prem %>%
 
 prem %>%
   group_by(Squad) %>%
-  summarize(Mean_Balance = -1*mean(Balance)) %>%
-  left_join(prem %>% select(Squad, Pts), by = "Squad") %>%
+  summarize(Mean_Balance = -1*mean(Balance),
+            Mean_Pts = mean(Pts)) %>%
+# left_join(prem %>% select(Squad, Pts), by = "Squad") %>%
   left_join(prem_colors, by = "Squad") %>%
   ggplot() +
-  geom_point(aes(x = Mean_Balance, y = Pts, fill = hex_fill, color = hex_color)) +
+  geom_point(aes(x = Mean_Balance, y = Mean_Pts, fill = hex_fill, color = hex_color)) +
   theme_bw() +
   scale_fill_identity() +
   scale_color_identity() +
@@ -171,7 +198,7 @@ prem %>%
        caption = "Data from Fbref.com & Transfermarkt.com",
        x = "Average Spend (in Million Euros)",
        y = "Points") +
-  geom_smooth(aes(x = Mean_Balance, y = Pts), method = "lm", se = FALSE, color = "red")
+  geom_smooth(aes(x = Mean_Balance, y = Mean_Pts), method = "lm", se = FALSE, color = "red")
   
 ```
 
