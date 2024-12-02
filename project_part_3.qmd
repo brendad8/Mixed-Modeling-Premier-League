@@ -29,9 +29,17 @@ prem_colors <- read_csv(here::here("data", "prem_team_colors.csv"), show_col_typ
 #| include: false
 
 prem <- prem %>%
-  mutate(xG_diff = GF - xG,
-         xGA_diff = GA - xGA,
-         SoT_diff = SoT - SoTA)
+  mutate(
+    xG_diff = GF - xG,
+    xGA_diff = GA - xGA,
+    SoT_diff = SoT - SoTA,
+    xG_cat = case_when(
+      xG_diff > 0 & xGA_diff < 0 ~ "Overperformed xG, Overperformed xGA",
+      xG_diff < 0 & xGA_diff < 0 ~ "Underperformed xG, Overperformed xGA",
+      xG_diff > 0 & xGA_diff > 0 ~ "Overperformed xG, Underperformed xGA",
+      xG_diff < 0 & xGA_diff > 0 ~ "Underperformed xG, Underperformed xGA"
+    ),
+  )
 ```
 
 ## Part I: Proposal and Data Assembly

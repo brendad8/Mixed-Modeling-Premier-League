@@ -1,0 +1,165 @@
+---
+title: "Final Report"
+author: "Dylan Li, Liam Quach, Brendan Callender"
+format: pdf
+editor: visual
+embed-resources: true
+echo: false
+---
+
+```{r}
+#| label: load-libraries
+#| include: false
+
+library(kableExtra)
+library(tidyverse)
+library(lme4)
+library(labelled)
+library(corrplot)
+library(nlme)
+```
+
+```{r}
+#| label: read-data
+#| include: false
+
+prem <- read_csv(here::here("data", "prem_multi_level.csv")) %>%
+  rename(Club = Squad)
+prem_colors <- read_csv(here::here("data", "prem_team_colors.csv"), show_col_types = FALSE) %>%
+  rename(Club = Squad)
+```
+
+```{r}
+#| include: false
+#| label: add-vars
+
+prem <- prem %>%
+  mutate(
+    xG_diff = GF - xG,
+    xGA_diff = GA - xGA,
+    SoT_diff = SoT - SoTA,
+    xG_cat = case_when(
+      xG_diff > 0 & xGA_diff < 0 ~ "Overperformed xG, Overperformed xGA",
+      xG_diff < 0 & xGA_diff < 0 ~ "Underperformed xG, Overperformed xGA",
+      xG_diff > 0 & xGA_diff > 0 ~ "Overperformed xG, Underperformed xGA",
+      xG_diff < 0 & xGA_diff > 0 ~ "Underperformed xG, Underperformed xGA"
+    ))
+```
+
+## I. Introduction
+
+The English Premier League (EPL) is the top tier of professional football (soccer) in England and is considered one of the most popular and competitive leagues in the world. The league is made up of twenty clubs (teams) that compete over a season for the Premier League title with new clubs added each year via a system of promotion and relegation. Each year, three new clubs are promoted from the second division based on the previous year's results with these promoted teams replacing the bottom three teams from the previous year's Premier League season.
+
+Over the course of a season, each team plays a total of 38 matches, facing every other team twice—once at home and once away. Teams are rewarded points from each game as follows: 3 points for a win, 1 points for a draw, and 0 points for a loss. The team with the most points at the end of the 38-game season is crowned as the Premier League Champions.
+
+add a little more maybe?
+
+For our project, we are interested in exploring the following research questions:
+
+1.  What factors are associated with higher or lower point totals in the English Premier league?
+2.  Is spending more money in the off-season associated with earning more points the following season?
+3.  How do differences in expected goals scored vs actual goals scored and expected goals conceded vs actual goals conceded impact point totals?
+
+## II. Data Source
+
+To answer our research questions, we collected English Premier League season-level data spanning from the 2017-2018 season up to the most recently completed 2023-2024 season. Data was collected from two sites: rbref.com and transfermarkt.com. The data collected from fbref includes performance related metrics for each team over the season as predictors as well as point totals for each team at the end of the season for our response variable. The performance metrics include total goals scored, total goals conceded, expected goals scored, expected goals conceded, average % possession, shooting metrics and more. The data collected from transfermarkt includes data relating to each teams expenditure and sales with respect to buying and selling players in the trasnfermarkt. This data includes money spent, money gained from sales, net spend, number of players bought, number of players sold and more. Money related variables are measured in thousands of euros.
+
+Predictors relating to season totals such as goals scored and goals conceded were scaled down to per 90/ per game values for better interpretability. This was achieved by dividing these metrics by the total games played which is 38.
+
++--------------+---------------------------------------------+--------------+--------------+----------------------------------------+
+| Name         | Label                                       | Role         | Type         | Values                                 |
++==============+=============================================+==============+==============+========================================+
+| Pts          | Points                                      | Response     | Quantitative | \>0                                    |
++--------------+---------------------------------------------+--------------+--------------+----------------------------------------+
+| GF           | Goals/90                                    | L1 Predictor | Quantitative | \>0                                    |
++--------------+---------------------------------------------+--------------+--------------+----------------------------------------+
+| GA           | Goals Against/90                            | L1 Predictor | Quantitative | \>0                                    |
++--------------+---------------------------------------------+--------------+--------------+----------------------------------------+
+| Balance      | Net Spend                                   | L1 Predictor | Quantitative | -inf, inf                              |
++--------------+---------------------------------------------+--------------+--------------+----------------------------------------+
+| Mean_Balance | Average Net Spend (for team)                | L2 Predictor | Quantitative | -inf, inf                              |
++--------------+---------------------------------------------+--------------+--------------+----------------------------------------+
+| xG_cat       | Actual vs Expected Metrics Category         | L1 Predictor | Categorical  | (Overperformed xG, Overperformed xGA), |
+|              |                                             |              |              |                                        |
+|              |                                             |              |              | Underperformed xG, Overperformed xGA)  |
+|              |                                             |              |              |                                        |
+|              |                                             |              |              | Overperformed xG, Underperformed xGA)  |
+|              |                                             |              |              |                                        |
+|              |                                             |              |              | Underperformed xG, Underperformed xGA) |
++--------------+---------------------------------------------+--------------+--------------+----------------------------------------+
+| xG_diff      | Actual vs Expected Goals Difference         | L1 Predictor | Quantitative |                                        |
++--------------+---------------------------------------------+--------------+--------------+----------------------------------------+
+| xGA_diff     | Actual vs Expected Goals Against Difference | L1 Predictor | Quantitative |                                        |
++--------------+---------------------------------------------+--------------+--------------+----------------------------------------+
+
+See example rows of data below. (need to change which rows to show)
+
+```{r}
+#| label: example-data-rows
+
+prem %>%
+  select(Club, Season, GF, GA, xG, xGA, Age, Poss, Expenditure, Income, Pts) %>%
+  mutate(
+    Season=str_split_i(Season, "-", 1),
+    across(where(is.double), .fns = ~round(.x, 2))
+    ) %>%
+  filter(Club %in% c("Arsenal", "Chelsea", "Everton")) %>%
+  head(3)
+```
+
+## III. Methods (need to beef up)
+
+To analyze the data, we will employ multi-level regression models, also known as hierarchical linear models. This approach is well-suited for the structure of the dataset, in which we have repeat observations for different clubs over several seasons. (See figure below)
+
+![](images/multi_level_structure.png){fig-align="center"}
+
+## IV. Results
+
+### Exploratory Data Analysis
+
+### ANOVA
+
+```{r}
+#| label: dot-plot-points-dist
+
+prem %>%
+  left_join(prem_colors, by = "Club") %>%
+  ggplot() +
+  geom_dotplot(aes(x = Pts, y = Club, fill = hex_fill, color = hex_color), binwidth = 1, dotsize = .75) +
+  theme(legend.position = "none") +
+  scale_fill_identity() +
+  scale_color_identity() +
+  theme_bw() +
+  labs(
+    x = "Points",
+    y = "",
+    title = "Distribution of Points by Team (2017-2023 Seasons)",
+    caption = "Data from Fbref.com"
+    ) +
+  theme(plot.title.position = "plot")
+```
+
+### Null Model
+
+```{r}
+#| label: model-0-shrinkage
+#| 
+model0 <- lmer(Pts ~ 1 + (1 | Club), data = prem) # null model
+fits = predict(model0, prem); prem$fits <- fits
+prem %>%
+  group_by(Club) %>%
+  mutate(mean_pts = mean(Pts)) %>%
+  ungroup() %>%
+  ggplot(aes(y = Club, x = mean_pts, group = Club)) +
+  geom_point() +
+  geom_point(aes(y = Club, x = fits),  col = "red") +
+  geom_point(aes(x = Pts), col="grey") + 
+  theme_bw() +  
+  geom_vline(xintercept = mean(prem$Pts), col="black") +
+  labs(y = "", x = "Points", title = "Random Effect Shrinkage") +
+  theme(plot.title.position = "plot") 
+```
+
+## V. Discussion
+
+## VI. Appendix
