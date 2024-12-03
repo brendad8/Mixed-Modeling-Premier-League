@@ -60,7 +60,7 @@ For our project, we are interested in exploring the following research questions
 2.  Is spending more money in the off-season associated with earning more points the following season?
 3.  How do differences in expected goals scored vs actual goals scored and expected goals conceded vs actual goals conceded impact point totals?
 
-## II. Data Source
+## II. Data Source & Methods
 
 To answer our research questions, we collected English Premier League season-level data spanning from the 2017-2018 season up to the most recently completed 2023-2024 season. Data was collected from two sites: rbref.com and transfermarkt.com. The data collected from fbref includes performance related metrics for each team over the season as predictors as well as point totals for each team at the end of the season for our response variable. The performance metrics include total goals scored, total goals conceded, expected goals scored, expected goals conceded, average % possession, shooting metrics and more. The data collected from transfermarkt includes data relating to each teams expenditure and sales with respect to buying and selling players in the trasnfermarkt. This data includes money spent, money gained from sales, net spend, number of players bought, number of players sold and more. Money related variables are measured in thousands of euros.
 
@@ -92,7 +92,7 @@ Predictors relating to season totals such as goals scored and goals conceded wer
 | xGA_diff     | Actual vs Expected Goals Against Difference | L1 Predictor | Quantitative |                                        |
 +--------------+---------------------------------------------+--------------+--------------+----------------------------------------+
 
-See example rows of data below. (need to change which rows to show)
+See example rows of data below. (need to change which columns to show)
 
 ```{r}
 #| label: example-data-rows
@@ -107,23 +107,101 @@ prem %>%
   head(3)
 ```
 
-## III. Methods (need to beef up)
-
 To analyze the data, we will employ multi-level regression models, also known as hierarchical linear models. This approach is well-suited for the structure of the dataset, in which we have repeat observations for different clubs over several seasons. (See figure below)
 
 ![](images/multi_level_structure.png){fig-align="center"}
 
-## IV. Results
+## III. Results
 
 ### Exploratory Data Analysis
 
+to do:
+
+add writing
+
+pick 1-2 more plots to show
+
+```{r}
+#| label: bivariate-goals-scored-and-condeded-plot
+
+prem %>%
+  ggplot() +
+  geom_point(aes(x = GF, GA, color = Pts)) +
+  scale_color_gradient(low = "red", high = "green") +  # Define gradient colors
+  theme_bw() +
+  theme(plot.title.position = "plot") +
+  labs(x = "Goals Scored per game",
+       y = "Goals Conceded per game",
+       legend = "Points",
+       caption = "Data from Fbref.com",
+       title = "Goals Scored and Goals Conceded vs Points") +
+  theme(plot.title = element_blank())
+```
+
+```{r}
+#| layout-ncol: 2
+#| message: false
+
+# Scatter plot for net spend vs point total
+prem %>%
+  left_join(prem_colors, by = "Club") %>%
+  mutate(label = ifelse(Balance < -400, paste0(Club, ": ", Season), "")) %>%
+  ggplot(aes(x = Balance, y = Pts)) +
+    geom_point(aes(color = hex_fill)) +
+    geom_text(aes(x = Balance, y = Pts, label = label), hjust = -0.1, color = "#034694") +
+    geom_smooth(method = "lm", se = FALSE, color = "red") +
+    labs(title = "EPL Single Season Point Totals vs Single Season Net Spend",
+         # subtitle = "(2017-2023 Seasons)",
+         caption = "Data from Fbref.com & Transfermarkt.com",
+         x = "Net Spend (in Million Euros)",
+         y = "Points") +
+  theme_bw() +
+  scale_color_identity() +
+  theme(
+    plot.title.position = "plot"
+    # plot.title = element_text(size = 12)
+  ) +
+  theme(plot.title = element_blank())
+
+#| label: spend-by-team-l2
+
+prem %>%
+  group_by(Club) %>%
+  summarize(Mean_Balance = -1*mean(Balance, na.rm = TRUE),
+            Mean_Pts = mean(Pts, na.rm = TRUE)) %>%
+  left_join(prem_colors, by = "Club") %>%
+  ggplot() +
+  geom_point(aes(x = Mean_Balance, y = Mean_Pts, color = hex_fill)) +
+  theme_bw() +
+  scale_fill_identity() +
+  scale_color_identity() +
+  theme(plot.title.position = "plot") +
+  labs(title = "EPL Average Point Total vs Average Net Spend",
+       # subtitle = "(2017-2023 Seasons)",
+       caption = "Data from Fbref.com & Transfermarkt.com",
+       x = "Average Spend (in Million Euros)",
+       y = "Points") +
+  geom_smooth(aes(x = Mean_Balance, y = Mean_Pts), method = "lm", se = FALSE, color = "red") +
+  theme(plot.title = element_blank())
+```
+
 ### ANOVA
+
+to do:
+
+1.  add writing
+
+|           |     | df  |     | SSE   |     | MSE     |     | F Statistic |     | P-Value   |
+|-----------|-----|-----|-----|-------|-----|---------|-----|-------------|-----|-----------|
+| Club      |     | 29  |     | 37233 |     | 1283.89 |     | 12.848      |     | \< 0.0001 |
+| Residuals |     | 110 |     | 10992 |     | 99.93   |     |             |     |           |
 
 ```{r}
 #| label: dot-plot-points-dist
 
 prem %>%
   left_join(prem_colors, by = "Club") %>%
+  mutate(hex_color = if_else(hex_color == "#FFFFFF", hex_fill, hex_color)) %>%
   ggplot() +
   geom_dotplot(aes(x = Pts, y = Club, fill = hex_fill, color = hex_color), binwidth = 1, dotsize = .75) +
   theme(legend.position = "none") +
@@ -136,7 +214,8 @@ prem %>%
     title = "Distribution of Points by Team (2017-2023 Seasons)",
     caption = "Data from Fbref.com"
     ) +
-  theme(plot.title.position = "plot")
+  theme(plot.title.position = "plot") +
+  theme(plot.title = element_blank())
 ```
 
 ### Null Model
@@ -157,9 +236,53 @@ prem %>%
   theme_bw() +  
   geom_vline(xintercept = mean(prem$Pts), col="black") +
   labs(y = "", x = "Points", title = "Random Effect Shrinkage") +
-  theme(plot.title.position = "plot") 
+  theme(plot.title.position = "plot") +
+  theme(plot.title = element_blank())
 ```
+
+### Model Fitting Process
+
+add code here
+
+write stuff here
+
+### Final Model
+
+```{r}
+#| label: final-model
+
+prem <- prem %>%
+  left_join(prem %>%
+              group_by(Club) %>%
+              summarize(Balance_mean = -1*mean(Balance)),
+            by = "Club"
+  )
+
+model2 <- lmer(Pts ~ GF + GA + Balance_mean + (1 | Club), data = prem)
+summary(model2)
+```
+
+technical writing stuff here
 
 ## V. Discussion
 
+answer research questions
+
+limitations
+
+strengths and weaknesses
+
+future steps
+
 ## VI. Appendix
+
+to do: add all model code stuff
+
+add variable labels:
+
+### ANOVA
+
+```{r}
+model00 <- lm(Pts ~ Club, data = prem)
+broom::tidy(anova(model00))
+```
