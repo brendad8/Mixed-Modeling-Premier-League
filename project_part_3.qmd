@@ -227,6 +227,11 @@ The intercept of the fixed effect is the least squared mean of points across sea
 performance::icc(model0)
 ```
 
+```{r}
+confint(model0)
+```
+
+
 The intraclass correlation of 0.713 means that the points across the seasons for each team is highly correlated. The ICC value is substantial, and it makes sense as a high performing team should score highly across different seasons, while weaker, lower performing teams would likely score low across different seasons.
 
 Log Likelihood: -556.49
