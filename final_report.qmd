@@ -1,0 +1,454 @@
+---
+title: "Final Report"
+author: "Dylan Li, Liam Quach, Brendan Callender"
+format: pdf
+editor: visual
+embed-resources: true
+echo: false
+fig-align: center
+---
+
+```{r}
+#| label: load-libraries
+#| include: false
+
+library(kableExtra)
+library(tidyverse)
+library(lme4)
+library(labelled)
+library(corrplot)
+library(nlme)
+```
+
+```{r}
+#| label: read-data
+#| include: false
+
+prem <- read_csv(here::here("data", "prem_multi_level.csv")) %>%
+  rename(Club = Squad)
+prem_colors <- read_csv(here::here("data", "prem_team_colors.csv"), show_col_types = FALSE) %>%
+  rename(Club = Squad)
+```
+
+```{r}
+#| include: false
+#| label: add-vars
+
+prem <- prem %>%
+  mutate(
+    NetSpend = -1*Balance,
+    xG_diff = GF - xG,
+    xGA_diff = GA - xGA,
+    SoT_diff = SoT - SoTA,
+    xG_cat = case_when(
+      xG_diff > 0 & xGA_diff < 0 ~ "Overperformed xG, Overperformed xGA",
+      xG_diff < 0 & xGA_diff < 0 ~ "Underperformed xG, Overperformed xGA",
+      xG_diff > 0 & xGA_diff > 0 ~ "Overperformed xG, Underperformed xGA",
+      xG_diff < 0 & xGA_diff > 0 ~ "Underperformed xG, Underperformed xGA"
+    )) %>%
+  left_join(prem %>%
+              group_by(Club) %>%
+              summarize(Mean_NetSpend = -1*mean(Balance)),
+            by = "Club"
+  ) %>% 
+  select(-Balance)
+
+
+```
+
+## I. Introduction
+
+The English Premier League (EPL) is the top tier of professional football (soccer) in England and is considered one of the most popular and competitive leagues in the world. The league is made up of twenty clubs (teams) that compete over a season for the Premier League title with new clubs added each year via a system of promotion and relegation. Each year, three new clubs are promoted from the second division based on the previous year's results with these promoted teams replacing the bottom three teams from the previous year's Premier League season.
+
+Over the course of a season, each team plays a total of 38 matches, facing every other team twice—once at home and once away. Teams are rewarded points from each game as follows: 3 points for a win, 1 points for a draw, and 0 points for a loss. The team with the most points at the end of the 38-game season is crowned as the Premier League Champions.
+
+add a little more maybe?
+
+For our project, we are interested in exploring the following research questions:
+
+1.  What factors are associated with higher or lower point totals in the English Premier league?
+2.  Is spending more money in the off-season associated with earning more points the following season?
+3.  How do differences in expected metrics to actual metrics impact a clubs point totals?
+
+## II. Data Source & Methods
+
+To answer our research questions, we collected English Premier League season-level data spanning from the 2017-2018 season up to the most recently completed 2023-2024 season. Data was collected from two sites: rbref.com and transfermarkt.com. The data collected from fbref includes performance related metrics for each team over the season as predictors as well as point totals for each team at the end of the season for our response variable. The performance metrics include total goals scored, total goals conceded, expected goals scored, expected goals conceded, average % possession, shooting metrics and more. The data collected from transfermarkt includes data relating to each teams expenditure and sales with respect to buying and selling players in the trasnfermarkt. This data includes money spent, money gained from sales, net spend, number of players bought, number of players sold and more. Money related variables are measured in thousands of euros.
+
+Predictors relating to season totals such as goals scored and goals conceded were scaled down to per 90/ per game values for better interpretability. This was achieved by dividing these metrics by the total games played which is 38.
+
+```{r}
+#| include: false
+prem %>% 
+  select(GF, GA, NetSpend, Mean_NetSpend, Poss, xG_diff, xGA_diff) %>%
+  summary()
+```
+
+| **Variable** | **Role** | **Range of Values** |
+|------------------------------------------|---------------|---------------|
+| Points | Response | (16, 100) |
+| Goals/90 | L1 | (0.52, 2.78) |
+| Goals Against/90 | L1 | (0.58, 2.74) |
+| Average Posession of Ball (%) | L1 | (35.4, 71.0) |
+| ... | ... | ... |
+| Net Spend (in €1,000,000) | L1 | (-118.07, 562.39) |
+| Club Average Net Spend (in €1,000,000) | L2 | (-7.72, 139.39) |
+| Actual vs Expected Goals/90 Difference | L1 | (-0.37, 0.72) |
+| Actual vs Expected Goals/90 Against Difference | L1 | (-0.37, 0.72) |
+
+: Description of Dataset Variables
+
+See example rows of data below:
+
+| Club    | Season | Pts | GF   | GA   | Poss | ... | NetSpend | Mean_NetSpend |
+|---------|--------|-----|------|------|------|-----|----------|---------------|
+| Chelsea | 2017   | 70  | 1.63 | 1.0  | 55.6 | ... | 65.9     | 139.0         |
+| Arsenal | 2017   | 63  | 1.95 | 1.34 | 61.4 | ... | -9.55    | 100.0         |
+| Everton | 2017   | 49  | 1.16 | 1.53 | 45.5 | ... | 76.8     | 26.0          |
+
+: Example Rows from Dataset
+
+```{r}
+#| label: example-data-rows
+#| include: false
+
+prem %>%
+  select(Club, Season, Pts, GF, GA, xG, xGA, Age, Poss, NetSpend, Mean_NetSpend) %>%
+  mutate(
+    Season=str_split_i(Season, "-", 1),
+    across(where(is.double), .fns = ~round(.x, 2))
+    ) %>%
+  filter(Club %in% c("Arsenal", "Chelsea", "Everton")) %>%
+  head(3)
+```
+
+To analyze the data, we will employ multi-level regression models, also known as hierarchical linear models. This approach is well-suited for the structure of the dataset, in which we have repeat observations for different clubs over several seasons. (See figure below)
+
+![Multi-level Structure of Data](images/multi_level_structure.png){fig-align="center" width="75%"}
+
+## III. Results
+
+### Exploratory Data Analysis
+
+This section presents the exploratory data analysis conducted to understand the key relationships between variables in the dataset. This exploratory data analysis was conducted before the model fitting process to gain an initial understanding of our research questions.
+
+*Figure 2* below shows the join distribution of goals scored per game and goals conceded per game, colored by season point totals. We there is a strong, negative correlation between goals scored per game and goals conceded per game. This means that teams who tend to score more, also tend to conceded less as well. When considering the season point totals, we see that decreasing the number of goals conceded per game is associated with higher point totals holding goals scored constant. Additionally, increasing the number of goals scored per game is assoicated with higher point totals holding goals conceded constant. Lastly, we see that jointly decreasing the number of goals conceded per game and increasing the number of goals scored per game is associated with the largest increase in season point totals.
+
+```{r}
+#| label: bivariate-goals-scored-and-condeded-plot
+#| fig-cap: Impact of Goals Scored/90 and Goals Conceded/90 on Season Point Totals
+#| fig-height: 2
+#| fig-width: 6
+
+prem %>%
+  ggplot() +
+  geom_point(aes(x = GF, GA, color = Pts)) +
+  scale_color_gradient(low = "red", high = "green") +  # Define gradient colors
+  theme_bw() +
+  theme(plot.title.position = "plot") +
+  labs(x = "Goals Scored per game",
+       y = "Goals Conceded per game",
+       legend = "Points",
+       # caption = "Data from Fbref.com",
+       title = "Goals Scored and Goals Conceded vs Points") +
+  theme(plot.title = element_blank())
+
+```
+
+*Figure 3* below shows the relationship between average % possession of the ball and season point totals. The plot shows a strong, positive associated between % possession and season points with higher values for % possession associated with higher point totals. This makes sense intuitively because teams with more possession tend to have the ball more which reduces the chances of the opposing team scoring and gives your team more chances to score goals.
+
+```{r}
+#| fig-cap: Season Point Totals by Season Average % Possession
+#| fig-height: 2.5
+#| fig-width: 5
+
+prem %>%
+  ggplot() +
+  geom_point(aes(x = Poss, Pts)) +
+  scale_color_gradient(low = "red", high = "green") +  # Define gradient colors
+  theme_bw() +
+  theme(plot.title.position = "plot") +
+  labs(x = "Average % Possession over Season",
+       y = "Points",
+       # caption = "Data from Fbref.com",
+       title = "Average % Possession vs Points") +
+  theme(plot.title = element_blank())
+```
+
+Lastly, the plots below in *Figure 4* and *Figure 5* show the impact of spending on season point totals. The plot on the left shows the relationship between season point totals and the net spend of the club for individual seasons. Larger values for net spend represent a club spending more money on new players while smaller values indicate a club spending less money spent with negative values indicating a team made profit selling players in the market. From the plot, we see a weak positive association with teams who spend more money being associated with higher point totals. We also notice a major outlier in the plot with Chelsea in the 2023-2024 season. This is a valid data point and represents the season in which Chelsea had new owners invest large amounts of money into the team. This is not normal behavior for when teams get new owners and can serve as an example of how making too many changes to a team has a negative impact on performance.
+
+In *Figure 5*, we see a much stronger positive associated between net spend and points when aggregated for each club. This demonstrates that consistent investment into a team over many seasons is more strongly associated with higher point totals than just a single season of large investment. (As they say... Rome wasn't built in a day)
+
+```{r}
+#| message: false
+#| fig-cap: Season Point Totals by Single Season Net Spend
+#| fig-height: 2
+#| 
+prem %>%
+  left_join(prem_colors, by = "Club") %>%
+  mutate(label = ifelse(NetSpend > 400, paste0(Club, ": ", Season), "")) %>%
+  ggplot(aes(x = NetSpend, y = Pts)) +
+    geom_point(aes(color = hex_fill)) +
+    geom_text(aes(x = NetSpend, y = Pts, label = label), vjust = -0.8, hjust = 0.8, color = "#034694") +
+    geom_smooth(method = "lm", se = FALSE, color = "red") +
+    labs(title = "EPL Single Season Point Totals vs Single Season Net Spend",
+         # subtitle = "(2017-2023 Seasons)",
+         # caption = "Data from Fbref.com & Transfermarkt.com",
+         x = "Net Spend (x1 Million Euros)",
+         y = "Points") +
+  theme_bw() +
+  scale_color_identity() +
+  theme(
+    plot.title.position = "plot",
+    # plot.title = element_text(size = 12)
+  ) +
+  theme(plot.title = element_blank()) +
+  scale_x_continuous(limits = c(-150, 600))
+
+```
+
+```{r}
+#| message: false
+#| fig-cap: Club Average Points by Club Average Net Spend
+#| fig-height: 2
+
+prem %>%
+  group_by(Club) %>%
+  summarize(Mean_NetSpend = mean(NetSpend, na.rm = TRUE),
+            Mean_Pts = mean(Pts, na.rm = TRUE)) %>%
+  left_join(prem_colors, by = "Club") %>%
+  ggplot() +
+  geom_point(aes(x = Mean_NetSpend, y = Mean_Pts, color = hex_fill)) +
+  theme_bw() +
+  scale_fill_identity() +
+  scale_color_identity() +
+  theme(plot.title.position = "plot") +
+  labs(title = "EPL Average Point Total vs Average Net Spend",
+       # subtitle = "(2017-2023 Seasons)",
+       # caption = "Data from Fbref.com & Transfermarkt.com",
+       x = "Average Net Spend (x1 Million Euros)",
+       y = "Average Points") +
+  geom_smooth(aes(x = Mean_NetSpend, y = Mean_Pts), method = "lm", se = FALSE, color = "red") +
+  theme(plot.title = element_blank())
+```
+
+### ANOVA
+
+After performing exploratory data analysis, an initial Analysis of Variance (ANOVA) test was performed to explore whether there was significant club-to-club variability in season point totals (See results in *Table 3* below). Looking at the p-value resulting from the ANOVA, we have significant evidence that at least 2 clubs have different mean point totals. This is supported by *Figure 6* below which shows the distribution of point totals by each club. We see clubs like Manchester City have very high point totals while clubs like West Brom and Norwich City have very low point totals.
+
+|           |     | df  |     | SSE   |     | MSE     |     | F-Statistic |     | P-Value   |
+|-----------|-----|-----|-----|-------|-----|---------|-----|-------------|-----|-----------|
+| Club      |     | 29  |     | 37233 |     | 1283.89 |     | 12.848      |     | \< 0.0001 |
+| Residuals |     | 110 |     | 10992 |     | 99.93   |     |             |     |           |
+
+: *ANOVA for Significance of Club-to-Club Variability*
+
+```{r}
+#| label: dot-plot-points-dist
+#| fig-cap: Distribution of Point Totals by Team
+#| fig-width: 8
+
+prem %>%
+  left_join(prem_colors, by = "Club") %>%
+  mutate(hex_color = if_else(hex_color == "#FFFFFF", hex_fill, hex_color)) %>%
+  ggplot() +
+  geom_dotplot(aes(x = Pts, y = Club, fill = hex_fill, color = hex_color), binwidth = 1, dotsize = .75) +
+  theme(legend.position = "none") +
+  scale_fill_identity() +
+  scale_color_identity() +
+  theme_bw() +
+  labs(
+    x = "Points",
+    y = "",
+    title = "Distribution of Points by Team (2017-2023 Seasons)",
+    # caption = "Data from Fbref.com"
+    ) +
+  theme(plot.title.position = "plot") +
+  theme(plot.title = element_blank())
+```
+
+### Null Model
+
+After finding signficant club-to-club variability in the season point totals, we fit an initial null model which only includes the club as a random effect. The model can be written out as seen below:
+
+$$
+Points_{ij} = \beta_{00} + u_j + \epsilon_{ij}
+$$
+
+where $u_j \sim N(0, \tau_0^2)$ and $\epsilon_{ij} \sim N(0, \sigma^2)$
+
+The summary of the null model output can be found below in *Table 4.* Looking at the ICC of the model, we see that approximately 72% of the variation is at the club level while 28% of the variation is within each club. This matches what we saw in *Figure 6* above with clubs point totals being similar across the seasons. Additionally, we see the model seconds the fact that there is significant club-to-club variation with the confidence interval for $\tau_0$ not containing 0. Lastly, we see the resulting predictions from the null model in *Figure 7 below*. The black points represent the mean points for each club while the red points represent the predicted points for each club. The distance from the red and black points represent the shrinkage that occurs when using a multi-level model. We can see a club like Luton Town has large shrinkage towards the mean because we only have one season of data for Luton.
+
+|   | Parameter/Statistic |   |   |   | Estimate |   |   |
+|--|-----------------------------------------|--|--|--|----------------------------------------------------|----|--|
+|  | $\sigma^2$ |  |  |  | 255.3 |  |  |
+|  | $\tau_0^2$ |  |  |  | 99.6 |  |  |
+|  | 95% CI for $\tau_0$ |  |  |  | (11.99, 21.18) |  |  |
+|  | ICC |  |  |  | 0.72 |  |  |
+
+: Null Model Summary
+
+```{r}
+#| include: false
+model0 <- lmer(Pts ~ 1 + (1 | Club), data = prem)
+summary(model0)
+confint(model0)
+```
+
+```{r}
+#| label: model-0-shrinkage
+#| fig-width: 8
+#| fig-cap: Null Model Predictions
+
+model0 <- lmer(Pts ~ 1 + (1 | Club), data = prem) # null model
+fits = predict(model0, prem); prem$fits <- fits
+prem %>%
+  group_by(Club) %>%
+  mutate(mean_pts = mean(Pts)) %>%
+  ungroup() %>%
+  ggplot(aes(y = Club, x = mean_pts, group = Club)) +
+  geom_point() +
+  geom_point(aes(y = Club, x = fits),  col = "red") +
+  geom_point(aes(x = Pts), col="grey") + 
+  theme_bw() +  
+  geom_vline(xintercept = mean(prem$Pts), col="black") +
+  labs(y = "", x = "Points", title = "Random Effect Shrinkage") +
+  theme(plot.title.position = "plot") +
+  theme(plot.title = element_blank())
+```
+
+### Model Fitting Process
+
+Below shows the process of how we arrived at our final model. We first began by including goals for and goals against in our first model due to our EDA showing a strong joint association with points. We found these variables to be significant so we included them in each subsequent model. From there we continued to explore new models by adding different level 1 predictors. If a predictor was significant, it was left in the model. After exploring level 1 predictors, we added our only level 2 predictor to the model which is average net spend for each club. We found this to be significant and moved on to adding random slopes to the model.
+
+```{r}
+#| echo: true
+#| eval: false
+model1 <- lmer(Pts ~ GF + GA + (1 | Club), data = prem)
+summary(model1)
+```
+
+Add Level 1 Predictors
+
+```{r}
+#| echo: true
+#| eval: false
+model2_1 <- lmer(Pts ~ GF + GA + xG_diff + xGA_diff + (1 | Club), data = prem)
+summary(model2_1)
+```
+
+```{r}
+#| echo: true
+#| eval: false
+model2_2 <- lmer(Pts ~ GF + GA + NetSpend + (1 | Club), data = prem)
+summary(model2_2)
+```
+
+```{r}
+#| echo: true
+#| eval: false
+model2_3 <- lmer(Pts ~ GF + GA + Poss + (1 | Club), data = prem)
+summary(model2_3)
+```
+
+```{r}
+#| echo: true
+#| eval: false
+model2_4 <- lmer(Pts ~ GF + GA + Age + (1 | Club), data = prem)
+summary(model2_4)
+```
+
+Add Level 2 Predictors
+
+```{r}
+#| echo: true
+#| eval: false
+model2_5 <- lmer(Pts ~ GF + GA + Mean_NetSpend + (1 | Club), data = prem)
+summary(model2_5)
+```
+
+```{r}
+#| echo: true
+#| eval: false
+model2_6 <- lmer(Pts ~ GF + GA + NetSpend + Mean_NetSpend + (1 | Club), data = prem)
+anova(model2_5, model2_6)
+```
+
+Random Slopes
+
+```{r}
+#| echo: true
+#| eval: false
+model3_1 <- lmer(Pts ~ GF + GA + Mean_NetSpend + (1 + GF | Club), data = prem)
+anova(model2_5, model3_1)
+
+model3_2 <- lmer(Pts ~ GF + GA + Mean_NetSpend + (1 + GA | Club), data = prem)
+anova(model2_5, model3_2)
+
+model3_3 <- lmer(Pts ~ GF + GA + Mean_NetSpend + (1 + GA + GF | Club), data = prem)
+anova(model2_5, model3_2)
+```
+
+### Final Model
+
+After the model fitting process we finished with a final model that can be written as follows:
+
+$$
+Points_{ij} = \beta_{00} + u_j + \beta_1(G/90)_{ij} + \beta_2(GA/90)_{ij} + \beta_3(\overline{NetSpend})_j + \epsilon_{ij}
+$$
+
+where $u_j \sim N(0, \tau_0^2)$ and $\epsilon_{ij} \sim N(0, \sigma^2)$
+
+A summary table of the output from the final model can be found below in *Table 5* below. We see that the coefficients for the predictors included in the model match what we would expect after conducting our EDA. However, we do notice that there is only a small effect associated with clubs spending more money over many seasons after accounting for goals scored and goals conceded per game. Lastly, we notice that all the club-to-club variability in point totals can be explained by our model including goals scored, goals conceded, and average net spend. This matches our intuition due to how teams are awarded points: 3 for a win, 1 for a draw, and 0 for a loss. Simply put, more goals scored and less goals conceded means more wins which means more points.
+
+| Parameter | Estimate | Interpretation |
+|----------|---------|----------------------------------------------------------|
+| $\sigma^2$ |  19.96 | 92% of Level 1 variability explained when compared to null model |
+|  |  |  |
+| $\tau_0^2$ |   0 | 100% of club-to-club variability explained by predictors |
+|  |  |  |
+| $\beta_{00}$ |  52.63 | Predicted point total for club with average goals scored, goals conceded, and net spend |
+|  |  |  |
+| $\beta_1$ |  23.04 | Associated increase in predicted points with each 1 increase in goals scored per game after adjusting for goals conceded, net spend, and club. |
+|  |  |  |
+| $\beta_2$ | -21.87 | Associated increase in predicted points with each 1 increase in goals conceded per game after adjusting for goals scored, net spend, and club. |
+|  |  |  |
+| 50$\beta_3$ | 1.55 | Associated increase in predicted points with each €50,000,000 increase in club average net spend after adjusting for goals scored, goals conceded, and club. |
+
+: Final Model Summary
+
+```{r}
+#| label: final-model
+#| include: false
+
+prem$GF_c <- scale(prem$GF, scale = FALSE)
+prem$GA_c <- scale(prem$GA, scale = FALSE)
+prem$Mean_NetSpend_c <- scale(prem$Mean_NetSpend, scale = FALSE)
+
+final_model <- lmer(Pts ~ GF_c + GA_c + Mean_NetSpend_c + (1 | Club), data = prem)
+summary(final_model)
+```
+
+### Model Diagnostics
+
+## V. Discussion
+
+answer research questions
+
+limitations
+
+strengths and weaknesses
+
+future steps
+
+## VI. Appendix
+
+to do: add all model code stuff
+
+add variable labels:
+
+### ANOVA
+
+```{r}
+model00 <- lm(Pts ~ Club, data = prem)
+broom::tidy(anova(model00))
+```
