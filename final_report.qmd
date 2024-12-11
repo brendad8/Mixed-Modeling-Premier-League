@@ -85,10 +85,11 @@ prem %>%
 
 | **Variable** | **Role** | **Range of Values** |
 |----|----|----|
+| ---- | ---- | ---- |
 | Points | Response | (16, 100) |
 | Goals/90 | L1 | (0.52, 2.78) |
 | Goals Against/90 | L1 | (0.58, 2.74) |
-| Average Posession of Ball (%) | L1 | (35.4, 71.0) |
+| Average Possession of Ball (%) | L1 | (35.4, 71.0) |
 | ... | ... | ... |
 | Net Spend (in €1,000,000) | L1 | (-118.07, 562.39) |
 | Club Average Net Spend (in €1,000,000) | L2 | (-7.72, 139.39) |
@@ -235,10 +236,10 @@ prem %>%
 
 After performing exploratory data analysis, an initial Analysis of Variance (ANOVA) test was performed to explore whether there was significant club-to-club variability in season point totals (See results in *Table 3* below). Looking at the p-value resulting from the ANOVA, we have significant evidence that at least 2 clubs have different mean point totals. This is supported by *Figure 6* below which shows the distribution of point totals by each club. We see clubs like Manchester City have very high point totals while clubs like West Brom and Norwich City have very low point totals.
 
-|           |     | df  |     | SSE   |     | MSE     |     | F-Statistic |     | P-Value   |
-|-----------|-----|-----|-----|-------|-----|---------|-----|-------------|-----|-----------|
-| Club      |     | 29  |     | 37233 |     | 1283.89 |     | 12.848      |     | \< 0.0001 |
-| Residuals |     | 110 |     | 10992 |     | 99.93   |     |             |     |           |
+|           |     | **df** |     | **SSE** |     | **MSE** |     | **F-Statistic** |     | **P-Value** |
+|-----------|-----|--------|-----|---------|-----|---------|-----|-----------------|-----|-------------|
+| Club      |     | 29     |     | 37233   |     | 1283.89 |     | 12.848          |     | \< 0.0001   |
+| Residuals |     | 110    |     | 10992   |     | 99.93   |     |                 |     |             |
 
 : *ANOVA for Significance of Club-to-Club Variability*
 
@@ -278,12 +279,12 @@ where $u_j \sim N(0, \tau_0^2)$ and $\epsilon_{ij} \sim N(0, \sigma^2)$
 
 The summary of the null model output can be found below in *Table 4.* Looking at the ICC of the model, we see that approximately 72% of the variation is at the club level while 28% of the variation is within each club. This matches what we saw in *Figure 6* above with clubs point totals being similar across the seasons. Additionally, we see the model seconds the fact that there is significant club-to-club variation with the confidence interval for $\tau_0$ not containing 0. Lastly, we see the resulting predictions from the null model in *Figure 7 below*. The black points represent the mean points for each club while the red points represent the predicted points for each club. The distance from the red and black points represent the shrinkage that occurs when using a multi-level model. We can see a club like Luton Town has large shrinkage towards the mean because we only have one season of data for Luton.
 
-|     | Parameter/Statistic |     |     |     | Estimate       |     |     |
-|-----|---------------------|-----|-----|-----|----------------|-----|-----|
-|     | $\sigma^2$          |     |     |     | 255.3          |     |     |
-|     | $\tau_0^2$          |     |     |     | 99.6           |     |     |
-|     | 95% CI for $\tau_0$ |     |     |     | (11.99, 21.18) |     |     |
-|     | ICC                 |     |     |     | 0.72           |     |     |
+|     | **Parameter/Statistic** |     |     |     | **Estimate**   |     |     |
+|-----|-------------------------|-----|-----|-----|----------------|-----|-----|
+|     | $\sigma^2$              |     |     |     | 255.3          |     |     |
+|     | $\tau_0^2$              |     |     |     | 99.6           |     |     |
+|     | 95% CI for $\tau_0$     |     |     |     | (11.99, 21.18) |     |     |
+|     | ICC                     |     |     |     | 0.72           |     |     |
 
 : Null Model Summary
 
@@ -396,23 +397,25 @@ $$
 Points_{ij} = \beta_{00} + u_j + \beta_1(G/90)_{ij} + \beta_2(GA/90)_{ij} + \beta_3(\overline{NetSpend})_j + \epsilon_{ij}
 $$
 
-where $u_j \sim N(0, \tau_0^2)$ and $\epsilon_{ij} \sim N(0, \sigma^2)$
+where $u_j \sim N(0, \tau_0^2)$ and $\epsilon_{ij} \sim N(0, \sigma^2)$. Additionally, all predictors have been grand-mean-centered (See interpretations below).
 
 A summary table of the output from the final model can be found below in *Table 5* below. We see that the coefficients for the predictors included in the model match what we would expect after conducting our EDA. However, we do notice that there is only a small effect associated with clubs spending more money over many seasons after accounting for goals scored and goals conceded per game. Lastly, we notice that all the club-to-club variability in point totals can be explained by our model including goals scored, goals conceded, and average net spend. This matches our intuition due to how teams are awarded points: 3 for a win, 1 for a draw, and 0 for a loss. Simply put, more goals scored and less goals conceded means more wins which means more points.
 
-| Parameter | Estimate | Interpretation |
-|------------------------|------------------------|------------------------|
-| $\sigma^2$ | 19.96 | 92% of Level 1 variability explained when compared to null model |
-|  |  |  |
-| $\tau_0^2$ | 0 | 100% of club-to-club variability explained by predictors |
-|  |  |  |
-| $\beta_{00}$ | 52.63 | Predicted point total for club with average goals scored, goals conceded, and net spend |
-|  |  |  |
-| $\beta_1$ | 23.04 | Associated increase in predicted points with each 1 increase in goals scored per game after adjusting for goals conceded, net spend, and club. |
-|  |  |  |
-| $\beta_2$ | -21.87 | Associated increase in predicted points with each 1 increase in goals conceded per game after adjusting for goals scored, net spend, and club. |
-|  |  |  |
-| 50$\beta_3$ | 1.55 | Associated increase in predicted points with each €50,000,000 increase in club average net spend after adjusting for goals scored, goals conceded, and club. |
+| **Parameter** \| **Estimate** \| **Interpretation** \|
+
+\|-------------\|-------------\|-----------------------------------------------\|
+
+| $\sigma^2$ \| 19.96 \| 92% of Level 1 variability explained when compared to null model \|
+|  \| \| \|
+| $\tau_0^2$ \| 0 \| 100% of club-to-club variability explained by predictors \|
+|  \| \| \|
+| $\beta_{00}$ \| 52.63 \| Predicted point total for club with average goals scored, goals conceded, and net spend \|
+|  \| \| \|
+| $\beta_1$ \| 23.04 \| Associated increase in predicted points with each 1 increase in goals scored per game after adjusting for goals conceded, net spend, and club. \|
+|  \| \| \|
+| $\beta_2$ \| -21.87 \| Associated increase in predicted points with each 1 increase in goals conceded per game after adjusting for goals scored, net spend, and club. \|
+|  \| \| \|
+| 50$\beta_3$ \| 1.55 \| Associated increase in predicted points with each €50,000,000 increase in club average net spend after adjusting for goals scored, goals conceded, and club. \|
 
 : Final Model Summary
 
@@ -430,6 +433,21 @@ summary(final_model)
 
 ### Model Diagnostics
 
+Looking at the diagnostic plots for our final model, we see that the Linearity, Normality, and Equal Variance assumptions are not violated. Firstly, in *Figure 8* below, we can see a random scatter both above and below the horizontal line which indicates linearity is not violated. In the same plot, we also see that there is no obvious pattern of fanning in the data which means the equal variance assumption is not violated. Lastly, in *Figure 9* we see the points in the plot follow the diagonal line indicating the normality assumption is not violated. In these plots, we do notice potential outliers with both positive and negative residuals.
+
+```{r}
+#| fig-cap: Residuals vs Fitted Plot
+#| fig-height: 3
+plot(final_model, xlab = "Fitted Values", ylab = "Residuals", col = 12)
+```
+
+```{r}
+#| fig-cap: Normal-QQ Plot
+#| fig-height: 3
+qqnorm(residuals(final_model), pch = 1, col=12, main="")
+qqline(residuals(final_model), col = 2)
+```
+
 ```{r}
 #| label: diagnostic-plots
 #| message: false
@@ -445,8 +463,25 @@ Graph 1 shows the assumption for normality of residuals are met without problem.
 
 ## V. Discussion
 
-answer research questions
+```{r}
+#| include: false
 
+bind_cols(prem, residuals(final_model)) %>%
+  mutate(Resid = Pts - fits) %>%
+  select(Club, Season, Pts, fits, Resid) %>%
+  arrange(desc(fits), Resid)
+
+bind_cols(prem, residuals(final_model)) %>%
+  mutate(Resid = Pts - fits) %>%
+  select(Club, Season, Pts, fits, Resid) %>%
+  arrange(desc(fits),desc(Resid))
+```
+
+## V. Discussion
+
+### Research Questions
+
+<<<<<<< HEAD
 1.  What factors are associated with higher or lower point totals in the English Premier league?
 2.  Is spending more money in the off-season associated with earning more points the following season?
 3.  How do differences in expected metrics to actual metrics impact a clubs point totals?
@@ -457,11 +492,9 @@ Through our modeling process, we were able to determine that the factors that mo
 
 We were also able to learn that more money spent in a single season for a club is not associated with earning more points in the following season for that club. However, we saw that more money spent on average across all the seasons for a club is moderately associated with an increase in the average points they earn per season. This finding aligns with our understanding of the league, as stronger clubs with more resources and access to better coaches and players would be expected to spend more on average, but also score more points on average as well.
 
-limitations
+### Implications
 
-strengths and weaknesses
-
-future steps
+### Limitations and Next Steps
 
 An interesting future step we can consider with future premier league data is to exclude goals from our model entirely, and examine if the other variables will be an accurate predictor of points scored during a season. The benefit to this analysis if the predictions are accurate will be the ability to predict scores for a club in a future season. As our current model stands, we require the results of the season, goals scored and scored against, to be able to make predictions on points earned. However, if we were to only use variables that we can acquire before a season starts, our model may be able to predict results for a season before it begins.
 
