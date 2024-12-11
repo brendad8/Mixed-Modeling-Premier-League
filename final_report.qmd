@@ -84,7 +84,7 @@ prem %>%
 ```
 
 | **Variable** | **Role** | **Range of Values** |
-|------------------------------------------|---------------|---------------|
+|----|----|----|
 | Points | Response | (16, 100) |
 | Goals/90 | L1 | (0.52, 2.78) |
 | Goals Against/90 | L1 | (0.58, 2.74) |
@@ -278,12 +278,12 @@ where $u_j \sim N(0, \tau_0^2)$ and $\epsilon_{ij} \sim N(0, \sigma^2)$
 
 The summary of the null model output can be found below in *Table 4.* Looking at the ICC of the model, we see that approximately 72% of the variation is at the club level while 28% of the variation is within each club. This matches what we saw in *Figure 6* above with clubs point totals being similar across the seasons. Additionally, we see the model seconds the fact that there is significant club-to-club variation with the confidence interval for $\tau_0$ not containing 0. Lastly, we see the resulting predictions from the null model in *Figure 7 below*. The black points represent the mean points for each club while the red points represent the predicted points for each club. The distance from the red and black points represent the shrinkage that occurs when using a multi-level model. We can see a club like Luton Town has large shrinkage towards the mean because we only have one season of data for Luton.
 
-|   | Parameter/Statistic |   |   |   | Estimate |   |   |
-|--|-----------------------------------------|--|--|--|----------------------------------------------------|----|--|
-|  | $\sigma^2$ |  |  |  | 255.3 |  |  |
-|  | $\tau_0^2$ |  |  |  | 99.6 |  |  |
-|  | 95% CI for $\tau_0$ |  |  |  | (11.99, 21.18) |  |  |
-|  | ICC |  |  |  | 0.72 |  |  |
+|     | Parameter/Statistic |     |     |     | Estimate       |     |     |
+|-----|---------------------|-----|-----|-----|----------------|-----|-----|
+|     | $\sigma^2$          |     |     |     | 255.3          |     |     |
+|     | $\tau_0^2$          |     |     |     | 99.6           |     |     |
+|     | 95% CI for $\tau_0$ |     |     |     | (11.99, 21.18) |     |     |
+|     | ICC                 |     |     |     | 0.72           |     |     |
 
 : Null Model Summary
 
@@ -401,14 +401,14 @@ where $u_j \sim N(0, \tau_0^2)$ and $\epsilon_{ij} \sim N(0, \sigma^2)$
 A summary table of the output from the final model can be found below in *Table 5* below. We see that the coefficients for the predictors included in the model match what we would expect after conducting our EDA. However, we do notice that there is only a small effect associated with clubs spending more money over many seasons after accounting for goals scored and goals conceded per game. Lastly, we notice that all the club-to-club variability in point totals can be explained by our model including goals scored, goals conceded, and average net spend. This matches our intuition due to how teams are awarded points: 3 for a win, 1 for a draw, and 0 for a loss. Simply put, more goals scored and less goals conceded means more wins which means more points.
 
 | Parameter | Estimate | Interpretation |
-|----------|---------|----------------------------------------------------------|
-| $\sigma^2$ |  19.96 | 92% of Level 1 variability explained when compared to null model |
+|------------------------|------------------------|------------------------|
+| $\sigma^2$ | 19.96 | 92% of Level 1 variability explained when compared to null model |
 |  |  |  |
-| $\tau_0^2$ |   0 | 100% of club-to-club variability explained by predictors |
+| $\tau_0^2$ | 0 | 100% of club-to-club variability explained by predictors |
 |  |  |  |
-| $\beta_{00}$ |  52.63 | Predicted point total for club with average goals scored, goals conceded, and net spend |
+| $\beta_{00}$ | 52.63 | Predicted point total for club with average goals scored, goals conceded, and net spend |
 |  |  |  |
-| $\beta_1$ |  23.04 | Associated increase in predicted points with each 1 increase in goals scored per game after adjusting for goals conceded, net spend, and club. |
+| $\beta_1$ | 23.04 | Associated increase in predicted points with each 1 increase in goals scored per game after adjusting for goals conceded, net spend, and club. |
 |  |  |  |
 | $\beta_2$ | -21.87 | Associated increase in predicted points with each 1 increase in goals conceded per game after adjusting for goals scored, net spend, and club. |
 |  |  |  |
@@ -429,6 +429,19 @@ summary(final_model)
 ```
 
 ### Model Diagnostics
+
+```{r}
+#| label: diagnostic-plots
+#| message: false
+
+performance::check_model(final_model, check = "qq")
+performance::check_model(final_model, check = "linearity")
+performance::check_model(final_model, check = "homogeneity")
+performance::check_model(final_model, check = "vif")
+performance::check_model(final_model, check = "outliers")
+```
+
+Graph 1 shows the assumption for normality of residuals are met without problem. On Graph 2, we can see that the reference line deviates slightly at either end. However, due to the lack of distinct patterns and the deviation not being drastic, we conclude that the assumption of linearity is mostly met. Graph 3 shows that equal variance assumption is met as there is not any fanning of the residuals present. Graph 4 displays no signs of collinearity between our predictor variables. Graph 5 shows several influential outliers present. These outliers are within reason so we conclude that our models are not greatly affected by them.
 
 ## V. Discussion
 
