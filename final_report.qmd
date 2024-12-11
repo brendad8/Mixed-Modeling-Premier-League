@@ -84,7 +84,11 @@ prem %>%
 ```
 
 | **Variable** | **Role** | **Range of Values** |
+<<<<<<< HEAD
 |---------------------------------------|-----------------|-----------------|
+=======
+|----|----|----|
+>>>>>>> e47b9c6bb14c4a849a391712757caaa4de6a8558
 | Points | Response | (16, 100) |
 | Goals/90 | L1 | (0.52, 2.78) |
 | Goals Against/90 | L1 | (0.58, 2.74) |
@@ -401,7 +405,10 @@ where $u_j \sim N(0, \tau_0^2)$ and $\epsilon_{ij} \sim N(0, \sigma^2)$. Additio
 A summary table of the output from the final model can be found below in *Table 5* below. We see that the coefficients for the predictors included in the model match what we would expect after conducting our EDA. However, we do notice that there is only a small effect associated with clubs spending more money over many seasons after accounting for goals scored and goals conceded per game. Lastly, we notice that all the club-to-club variability in point totals can be explained by our model including goals scored, goals conceded, and average net spend. This matches our intuition due to how teams are awarded points: 3 for a win, 1 for a draw, and 0 for a loss. Simply put, more goals scored and less goals conceded means more wins which means more points.
 
 | Parameter | Estimate | Interpretation |
+
 |-------------|-------------|-----------------------------------------------|
+|------------------------|------------------------|------------------------|
+
 | $\sigma^2$ | 19.96 | 92% of Level 1 variability explained when compared to null model |
 |  |  |  |
 | $\tau_0^2$ | 0 | 100% of club-to-club variability explained by predictors |
@@ -430,6 +437,7 @@ summary(final_model)
 
 ### Model Diagnostics
 
+<<<<<<< HEAD
 Looking at the diagnostic plots for our final model, we see that the Linearity, Normality, and Equal Variance assumptions are not violated. Firstly, in *Figure 8* below, we can see a random scatter both above and below the horizontal line which indicates linearity is not violated. In the same plot, we also see that there is no obvious pattern of fanning in the data which means the equal variance assumption is not violated. Lastly, in *Figure 9* we see the points in the plot follow the diagonal line indicating the normality assumption is not violated. In these plots, we do notice potential outliers with both positive and negative residuals.
 
 ```{r}
@@ -444,6 +452,22 @@ plot(final_model, xlab = "Fitted Values", ylab = "Residuals", col = 12)
 qqnorm(residuals(final_model), pch = 1, col=12, main="")
 qqline(residuals(final_model), col = 2)
 ```
+=======
+```{r}
+#| label: diagnostic-plots
+#| message: false
+
+performance::check_model(final_model, check = "qq")
+performance::check_model(final_model, check = "linearity")
+performance::check_model(final_model, check = "homogeneity")
+performance::check_model(final_model, check = "vif")
+performance::check_model(final_model, check = "outliers")
+```
+
+Graph 1 shows the assumption for normality of residuals are met without problem. On Graph 2, we can see that the reference line deviates slightly at either end. However, due to the lack of distinct patterns and the deviation not being drastic, we conclude that the assumption of linearity is mostly met. Graph 3 shows that equal variance assumption is met as there is not any fanning of the residuals present. Graph 4 displays no signs of collinearity between our predictor variables. Graph 5 shows several influential outliers present. These outliers are within reason so we conclude that our models are not greatly affected by them.
+
+## V. Discussion
+
 
 ```{r}
 #| include: false
