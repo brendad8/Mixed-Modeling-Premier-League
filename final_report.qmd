@@ -383,31 +383,50 @@ anova(model2_5, model3_1)
 
 model3_2 <- lmer(Pts ~ GF + GA + Mean_NetSpend + (1 + GA | Club), data = prem)
 anova(model2_5, model3_2)
+
+model3_3 <- lmer(Pts ~ GF + GA + Mean_NetSpend + (1 + GA + GF | Club), data = prem)
+anova(model2_5, model3_2)
 ```
 
 ### Final Model
+
+After the model fitting process we finished with a final model that can be written as follows:
 
 $$
 Points_{ij} = \beta_{00} + u_j + \beta_1(G/90)_{ij} + \beta_2(GA/90)_{ij} + \beta_3(\overline{NetSpend})_j + \epsilon_{ij}
 $$
 
-$\hat{\sigma}^2 = 19.96$
+where $u_j \sim N(0, \tau_0^2)$ and $\epsilon_{ij} \sim N(0, \sigma^2)$
 
-$\hat{\tau_0}^2 = 0$
+A summary table of the output from the final model can be found below in *Table 5* below. We see that the coefficients for the predictors included in the model match what we would expect after conducting our EDA. However, we do notice that there is only a small effect associated with clubs spending more money over many seasons after accounting for goals scored and goals conceded per game. Lastly, we notice that all the club-to-club variability in point totals can be explained by our model including goals scored, goals conceded, and average net spend. This matches our intuition due to how teams are awarded points: 3 for a win, 1 for a draw, and 0 for a loss. Simply put, more goals scored and less goals conceded means more wins which means more points.
 
-Level 2 Variability Explained = 100%
+| Parameter | Estimate | Interpretation |
+|----------|---------|----------------------------------------------------------|
+| $\sigma^2$ |  19.96 | 92% of Level 1 variability explained when compared to null model |
+|  |  |  |
+| $\tau_0^2$ |   0 | 100% of club-to-club variability explained by predictors |
+|  |  |  |
+| $\beta_{00}$ |  52.63 | Predicted point total for club with average goals scored, goals conceded, and net spend |
+|  |  |  |
+| $\beta_1$ |  23.04 | Associated increase in predicted points with each 1 increase in goals scored per game after adjusting for goals conceded, net spend, and club. |
+|  |  |  |
+| $\beta_2$ | -21.87 | Associated increase in predicted points with each 1 increase in goals conceded per game after adjusting for goals scored, net spend, and club. |
+|  |  |  |
+| 50$\beta_3$ | 1.55 | Associated increase in predicted points with each €50,000,000 increase in club average net spend after adjusting for goals scored, goals conceded, and club. |
 
-Level 1 Variability Explained = 92.2%
+: Final Model Summary
 
 ```{r}
 #| label: final-model
+#| include: false
 
+prem$GF_c <- scale(prem$GF, scale = FALSE)
+prem$GA_c <- scale(prem$GA, scale = FALSE)
+prem$Mean_NetSpend_c <- scale(prem$Mean_NetSpend, scale = FALSE)
 
-final_model <- lmer(Pts ~ GF + GA + Mean_NetSpend + (1 | Club), data = prem)
+final_model <- lmer(Pts ~ GF_c + GA_c + Mean_NetSpend_c + (1 | Club), data = prem)
 summary(final_model)
 ```
-
-technical writing stuff here
 
 ### Model Diagnostics
 
