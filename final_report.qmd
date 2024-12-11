@@ -83,16 +83,14 @@ prem %>%
   summary()
 ```
 
+
 | **Variable** | **Role** | **Range of Values** |
-<<<<<<< HEAD
 |---------------------------------------|-----------------|-----------------|
-=======
 |----|----|----|
->>>>>>> e47b9c6bb14c4a849a391712757caaa4de6a8558
 | Points | Response | (16, 100) |
 | Goals/90 | L1 | (0.52, 2.78) |
 | Goals Against/90 | L1 | (0.58, 2.74) |
-| Average Posession of Ball (%) | L1 | (35.4, 71.0) |
+| Average Possession of Ball (%) | L1 | (35.4, 71.0) |
 | ... | ... | ... |
 | Net Spend (in €1,000,000) | L1 | (-118.07, 562.39) |
 | Club Average Net Spend (in €1,000,000) | L2 | (-7.72, 139.39) |
