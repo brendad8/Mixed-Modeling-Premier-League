@@ -233,9 +233,9 @@ prem %>%
 
 ### ANOVA
 
-to do:
+After performing exploratory data analysis, an initial Analysis of Variance (ANOVA) test was performed to explore whether there was significant club-to-club variability in season point totals (See results in *Table 3* below). Looking at the p-value resulting from the ANOVA, we have significant evidence that at least 2 clubs have different mean point totals. This is supported by *Figure 6* below which shows the distribution of point totals by each club. We see clubs like Manchester City have very high point totals while clubs like West Brom and Norwich City have very low point totals.
 
-|           |     | df  |     | SSE   |     | MSE     |     | F Statistic |     | P-Value   |
+|           |     | df  |     | SSE   |     | MSE     |     | F-Statistic |     | P-Value   |
 |-----------|-----|-----|-----|-------|-----|---------|-----|-------------|-----|-----------|
 | Club      |     | 29  |     | 37233 |     | 1283.89 |     | 12.848      |     | \< 0.0001 |
 | Residuals |     | 110 |     | 10992 |     | 99.93   |     |             |     |           |
@@ -245,6 +245,7 @@ to do:
 ```{r}
 #| label: dot-plot-points-dist
 #| fig-cap: Distribution of Point Totals by Team
+#| fig-width: 8
 
 prem %>%
   left_join(prem_colors, by = "Club") %>%
@@ -267,29 +268,37 @@ prem %>%
 
 ### Null Model
 
-```{r}
-model0 <- lmer(Pts ~ 1 + (1 | Club), data = prem)
-summary(model0)
-confint(model0)
-```
+After finding signficant club-to-club variability in the season point totals, we fit an initial null model which only includes the club as a random effect. The model can be written out as seen below:
 
 $$
 Points_{ij} = \beta_{00} + u_j + \epsilon_{ij}
 $$
 
-where $u \sim N(0, \tau_0^2)$ and $\epsilon \sim N(0, \sigma^2)$
+where $u_j \sim N(0, \tau_0^2)$ and $\epsilon_{ij} \sim N(0, \sigma^2)$
 
-$\hat{\sigma}^2 = 255.3$
+The summary of the null model output can be found below in *Table 4.* Looking at the ICC of the model, we see that approximately 72% of the variation is at the club level while 28% of the variation is within each club. This matches what we saw in *Figure 6* above with clubs point totals being similar across the seasons. Additionally, we see the model seconds the fact that there is significant club-to-club variation with the confidence interval for $\tau_0$ not containing 0. Lastly, we see the resulting predictions from the null model in *Figure 7 below*. The black points represent the mean points for each club while the red points represent the predicted points for each club. The distance from the red and black points represent the shrinkage that occurs when using a multi-level model. We can see a club like Luton Town has large shrinkage towards the mean because we only have one season of data for Luton.
 
-$\hat{\tau_0}^2 = 99.6$
+|   | Parameter/Statistic |   |   |   | Estimate |   |   |
+|--|-----------------------------------------|--|--|--|----------------------------------------------------|----|--|
+|  | $\sigma^2$ |  |  |  | 255.3 |  |  |
+|  | $\tau_0^2$ |  |  |  | 99.6 |  |  |
+|  | 95% CI for $\tau_0$ |  |  |  | (11.99, 21.18) |  |  |
+|  | ICC |  |  |  | 0.72 |  |  |
 
-$ICC = 0.72$
+: Null Model Summary
 
-95% CI for $\tau_0 = (11.99, 21.18)$
+```{r}
+#| include: false
+model0 <- lmer(Pts ~ 1 + (1 | Club), data = prem)
+summary(model0)
+confint(model0)
+```
 
 ```{r}
 #| label: model-0-shrinkage
-#| 
+#| fig-width: 8
+#| fig-cap: Null Model Predictions
+
 model0 <- lmer(Pts ~ 1 + (1 | Club), data = prem) # null model
 fits = predict(model0, prem); prem$fits <- fits
 prem %>%
@@ -309,9 +318,72 @@ prem %>%
 
 ### Model Fitting Process
 
-add code here
+Below shows the process of how we arrived at our final model. We first began by including goals for and goals against in our first model due to our EDA showing a strong joint association with points. We found these variables to be significant so we included them in each subsequent model. From there we continued to explore new models by adding different level 1 predictors. If a predictor was significant, it was left in the model. After exploring level 1 predictors, we added our only level 2 predictor to the model which is average net spend for each club. We found this to be significant and moved on to adding random slopes to the model.
 
-write stuff here
+```{r}
+#| echo: true
+#| eval: false
+model1 <- lmer(Pts ~ GF + GA + (1 | Club), data = prem)
+summary(model1)
+```
+
+Add Level 1 Predictors
+
+```{r}
+#| echo: true
+#| eval: false
+model2_1 <- lmer(Pts ~ GF + GA + xG_diff + xGA_diff + (1 | Club), data = prem)
+summary(model2_1)
+```
+
+```{r}
+#| echo: true
+#| eval: false
+model2_2 <- lmer(Pts ~ GF + GA + NetSpend + (1 | Club), data = prem)
+summary(model2_2)
+```
+
+```{r}
+#| echo: true
+#| eval: false
+model2_3 <- lmer(Pts ~ GF + GA + Poss + (1 | Club), data = prem)
+summary(model2_3)
+```
+
+```{r}
+#| echo: true
+#| eval: false
+model2_4 <- lmer(Pts ~ GF + GA + Age + (1 | Club), data = prem)
+summary(model2_4)
+```
+
+Add Level 2 Predictors
+
+```{r}
+#| echo: true
+#| eval: false
+model2_5 <- lmer(Pts ~ GF + GA + Mean_NetSpend + (1 | Club), data = prem)
+summary(model2_5)
+```
+
+```{r}
+#| echo: true
+#| eval: false
+model2_6 <- lmer(Pts ~ GF + GA + NetSpend + Mean_NetSpend + (1 | Club), data = prem)
+anova(model2_5, model2_6)
+```
+
+Random Slopes
+
+```{r}
+#| echo: true
+#| eval: false
+model3_1 <- lmer(Pts ~ GF + GA + Mean_NetSpend + (1 + GF | Club), data = prem)
+anova(model2_5, model3_1)
+
+model3_2 <- lmer(Pts ~ GF + GA + Mean_NetSpend + (1 + GA | Club), data = prem)
+anova(model2_5, model3_2)
+```
 
 ### Final Model
 
@@ -331,11 +403,13 @@ Level 1 Variability Explained = 92.2%
 #| label: final-model
 
 
-model2 <- lmer(Pts ~ GF + GA + Mean_NetSpend + (1 | Club), data = prem)
-summary(model2)
+final_model <- lmer(Pts ~ GF + GA + Mean_NetSpend + (1 | Club), data = prem)
+summary(final_model)
 ```
 
 technical writing stuff here
+
+### Model Diagnostics
 
 ## V. Discussion
 
