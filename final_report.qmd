@@ -407,7 +407,6 @@ A summary table of the output from the final model can be found below in *Table 
 | Parameter | Estimate | Interpretation |
 
 |-------------|-------------|-----------------------------------------------|
-|------------------------|------------------------|------------------------|
 
 | $\sigma^2$ | 19.96 | 92% of Level 1 variability explained when compared to null model |
 |  |  |  |
@@ -437,7 +436,6 @@ summary(final_model)
 
 ### Model Diagnostics
 
-<<<<<<< HEAD
 Looking at the diagnostic plots for our final model, we see that the Linearity, Normality, and Equal Variance assumptions are not violated. Firstly, in *Figure 8* below, we can see a random scatter both above and below the horizontal line which indicates linearity is not violated. In the same plot, we also see that there is no obvious pattern of fanning in the data which means the equal variance assumption is not violated. Lastly, in *Figure 9* we see the points in the plot follow the diagonal line indicating the normality assumption is not violated. In these plots, we do notice potential outliers with both positive and negative residuals.
 
 ```{r}
@@ -452,7 +450,7 @@ plot(final_model, xlab = "Fitted Values", ylab = "Residuals", col = 12)
 qqnorm(residuals(final_model), pch = 1, col=12, main="")
 qqline(residuals(final_model), col = 2)
 ```
-=======
+
 ```{r}
 #| label: diagnostic-plots
 #| message: false
