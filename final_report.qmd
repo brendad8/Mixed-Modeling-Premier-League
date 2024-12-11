@@ -401,7 +401,7 @@ where $u_j \sim N(0, \tau_0^2)$ and $\epsilon_{ij} \sim N(0, \sigma^2)$
 A summary table of the output from the final model can be found below in *Table 5* below. We see that the coefficients for the predictors included in the model match what we would expect after conducting our EDA. However, we do notice that there is only a small effect associated with clubs spending more money over many seasons after accounting for goals scored and goals conceded per game. Lastly, we notice that all the club-to-club variability in point totals can be explained by our model including goals scored, goals conceded, and average net spend. This matches our intuition due to how teams are awarded points: 3 for a win, 1 for a draw, and 0 for a loss. Simply put, more goals scored and less goals conceded means more wins which means more points.
 
 | Parameter | Estimate | Interpretation |
-|----|----|----|
+|------------------------|------------------------|------------------------|
 | $\sigma^2$ | 19.96 | 92% of Level 1 variability explained when compared to null model |
 |  |  |  |
 | $\tau_0^2$ | 0 | 100% of club-to-club variability explained by predictors |
@@ -447,11 +447,23 @@ Graph 1 shows the assumption for normality of residuals are met without problem.
 
 answer research questions
 
+1.  What factors are associated with higher or lower point totals in the English Premier league?
+2.  Is spending more money in the off-season associated with earning more points the following season?
+3.  How do differences in expected metrics to actual metrics impact a clubs point totals?
+
+(i just put the questions here for now so its easier to answer, definitely need to clean up the format)
+
+Through our modeling process, we were able to determine that the factors that most affect higher or lower point totals in the English Premier league are the number of goals scored, the number of goals scored against them, and average net spending for a club.
+
+We were also able to learn that more money spent in a single season for a club is not associated with earning more points in the following season for that club. However, we saw that more money spent on average across all the seasons for a club is moderately associated with an increase in the average points they earn per season. This finding aligns with our understanding of the league, as stronger clubs with more resources and access to better coaches and players would be expected to spend more on average, but also score more points on average as well.
+
 limitations
 
 strengths and weaknesses
 
 future steps
+
+An interesting future step we can consider with future premier league data is to exclude goals from our model entirely, and examine if the other variables will be an accurate predictor of points scored during a season. The benefit to this analysis if the predictions are accurate will be the ability to predict scores for a club in a future season. As our current model stands, we require the results of the season, goals scored and scored against, to be able to make predictions on points earned. However, if we were to only use variables that we can acquire before a season starts, our model may be able to predict results for a season before it begins.
 
 ## VI. Appendix
 
